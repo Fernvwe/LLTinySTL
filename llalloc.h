@@ -35,17 +35,17 @@ template <class T>
 class allocator{
 public:
 	// the standard interface
-	using value_type		T;
-	using pointer			T*;
-	using const_pointer 	const T*;
-	using reference 		T&;
-	using const_referrence	const T&;
-	using size_type 		size_t;
-	using difference_type 	ptrdiff_t;
+	using value_type		= T;
+	using pointer			= T*;
+	using const_pointer 	= const T*;
+	using reference 		= T&;
+	using const_referrence	= const T&;
+	using size_type 		= size_t;
+	using difference_type 	= ptrdiff_t;
 	// rebind allocator of type U
 	template  <class U>
 	struct rebind{
-		using other allocator<U>;
+		using other =  allocator<U>;
 	};
 	pointer allocate(size_type n, const void* hint = 0){
 		return _allocate((difference_type)n, (pointer)0);
