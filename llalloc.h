@@ -65,6 +65,15 @@ public:
 	}
 
 };
+template<class T, class Alloc = allocator<T>>
+class simple_alloc:public allocator<T>{
+	static pointer allocate(){
+		return _allocate(1,static_cast<pointer>(0));
+	}
+	static void deallocate(pointer p){
+		return _deallocate(p);
+	}
+};
 }
 
 #endif
