@@ -85,20 +85,20 @@ class list {
         return iterator(next_node);
     }
     // member fucntions
-        // element operates
+    // element operates
     void push_back(const T& t) { insert(end(), t); }
-    void pop_back() { 
+    void pop_back() {
         iterator tmp = end();
-        erase( --tmp ); 
+        erase(--tmp);
     }
     void push_front(const T& t) { insert(begin(), t); }
     void pop_front() { erase(begin()); }
     // Move all elements in [first, last) to before position
-    void transfer(iterator posi, iterator first, iterator last){
+    void transfer(iterator posi, iterator first, iterator last) {
         // avoid Repeat operation
-        if(posi != last){
-            link_type head = static_cast<link_type>(first.node->pre) 
-            link_type tail = last.node; 
+        if (posi != last) {
+            link_type head = static_cast<link_type>(first.node->pre)
+                link_type tail = last.node;
             link_type tmp = (--last).node;
             head->next = tail;
             tail->pre = head;
@@ -110,9 +110,33 @@ class list {
             tail->pre = tmp;
         }
     }
-    
+
     void clear();
     void remove(const T& value);
+    void merge(list& x);
+    void reverse();
+    void sort();
+    // Join x before the position pointed to by posi, x must be different from
+    // *this.
+    void splice(iterator posi, list& x) {
+        if (!x.empty()) transfer(posi, x.begin(), x.end());
+    }
+    // Join i before the position pointed to  by posi, position and i could
+    // point the same one.
+    void splice(iterator posi, list&, iterator i) {
+        iterator j = i;
+        ++j;
+        if (posi == i || posi == j) return;
+        transfer(posi, i, j);
+    }
+    void splice(iterator posi, list&, iterator first, iterator last){
+        if(first != last)
+            transfer(posi, first, last);
+    }
+    void merge(list& x);
+    void reverse();
+    void sort();
+
    private:
     void empty_initialize() {
         node = get_node();  // set a empty node space, the node pointer it.
@@ -122,9 +146,9 @@ class list {
 };
 
 template <class T, class Allocator>
-void list<T,Allocator>::clear(){
+void list<T, Allocator>::clear() {
     link_type cur = static_cast<link_type>(node->next);
-    while(cur != node){
+    while (cur != node) {
         link_type tmp = cur;
         cur = cur->next;
         destory_node(tmp);
@@ -133,15 +157,67 @@ void list<T,Allocator>::clear(){
     node->pre = node;
 }
 template <class T, class Allocator>
-void list<T,Allocator>::remove(const T& value){
+void list<T, Allocator>::remove(const T& value) {
     iterator first = begin();
     iterator last = end();
-    while(first != last){
+    while (first != last) {
         iterator next = first;
         ++next;
-        if(*first == value) erase(first);
+        if (*first == value) erase(first);
         first = next;
     }
+}
+// join x in this list. Both list must be sorted.
+template <class T, class Allocator>
+void list<T,Allocator>::merge(list<T,Allocator>& x){
+    iterator fir1 = begin();
+    iterator last1 = end();
+    iterator fir2 = x.begin();
+    iterator last2 = x.end();
+
+    while(fir1 != last1 && fir2 != last2){
+        if(*fir2 < *fir1){
+            iterator next = fir2;
+            transfer(fir1, fir2, ++next);
+            fir2 = next;
+        }else
+            ++fir1;
+        if(fir2 != last2) transfer(last1, fir2, last2);
+    }
+}
+template <class T, class Allocator>
+void list<T,Allocator>::reverse(){
+    // if size of list is 1 or 2, this operation is meaningless.
+    if(node->next == node || node->next->next == node)  return;
+    iterator first = begin();
+    ++first;
+    while(first != end()){
+        iterator old = first;
+        ++first;
+        transfer(begin(), old, first);
+    }
+}
+// sort() member function 
+template <class T, class Allocator>
+void list<T,Allocator>::sort(){
+    if(node->next == node || node->next->next == node)  return;
+    list<T,Allocator> carry;
+    list<T,Allocator> counter[64];
+    int fill = 0;
+    while(!empty()){
+        carry.splice( carry.begin(), *this, begin());
+        int i = 0;
+        while(i < fill && !counter[i].empty()){
+            counter[i].merge(carry);
+            carry.swap(counter[i++]);
+        }
+        carry.swap(counter[i]);
+        if( i == fill ) 
+            ++fill;
+    }
+    for(int i = 1; i < fill; ++i)
+        counter[i].merge(counter[i-1]);
+    swap(counter[fill-1]);
 }
 template <class T>
 struct __list_iterator : public literator<bidirectional_iterator_tag, T> {
