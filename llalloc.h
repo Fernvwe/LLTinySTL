@@ -67,6 +67,7 @@ public:
 };
 template<class T, class Alloc = allocator<T>>
 class simple_alloc:public allocator<T>{
+	using typename allocator<T>::pointer;
 	static pointer allocate(){
 		return _allocate(1,static_cast<pointer>(0));
 	}

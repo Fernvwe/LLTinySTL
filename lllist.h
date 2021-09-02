@@ -21,16 +21,16 @@ class list {
     using difference_type = std::ptrdiff_t;
     using reference = value_type&;
     using const_reference = const value_type&;
-    using pointer = Allocator::pointer;
-    using const_pointer = Allocator::const_pointer;
-    using iterator = __list_iterator<T>;
-    using const_iterator = ;
-    using reverse_iterator = ;
-    using const_reverse_iterator = ;
-    using link_type = __list_node<T>*;
+    using pointer = typename Allocator::pointer;
+    using const_pointer = typename Allocator::const_pointer;
+    typedef  __list_iterator<T> iterator;
+    // using const_iterator = ;
+    // using reverse_iterator = ;
+    // using const_reverse_iterator = ;
+    using link_type =  __list_node<T>*;
 
    private:
-    using list_node = __list_node<T>;
+    using list_node =  __list_node<T>;
     // this allocator is designed for
     using list_node_alloc = simple_alloc<list_node>;
     link_type get_node() { return list_node_alloc::allocate(); }
