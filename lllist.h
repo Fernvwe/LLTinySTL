@@ -5,6 +5,8 @@
 
 #include "llalloc.h"
 #include "lliterator.h"
+#include "llalgorithm.h"
+
 namespace LL {
 template <class T>
 class __list_node {
@@ -180,6 +182,9 @@ class list {
     void merge(list& x);
     void reverse();
     void sort();
+    void swap(list &x){
+        LL::swap(node, x.node);
+    }
     // Join x before the position pointed to by posi, x must be different from
     // *this.
     void splice(iterator posi, list& x) {
@@ -270,6 +275,11 @@ void list<T, Allocator>::sort() {
     }
     for (int i = 1; i < fill; ++i) counter[i].merge(counter[i - 1]);
     swap(counter[fill - 1]);
+}
+
+template<typename T>
+void swap(list<T>& a, list<T> b){
+    a.swap(b);
 }
 
 }  // namespace LL

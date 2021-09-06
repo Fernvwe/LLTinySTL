@@ -16,9 +16,9 @@ int main(){
     // constuctor test
     std::vector<int> nums{7,1,2,3,4};
     std::sort(nums.begin(),nums.end());
-        // TODO need reconstruct for robust
+        // TODO need reconstruct for more robust
     LL::list<int> b(nums.begin(), nums.end());
-    b.clear();
+    b.sort();
     for(auto i:b){
        std::cout<<i<<std::endl; 
     }
