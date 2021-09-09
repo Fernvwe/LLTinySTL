@@ -79,11 +79,7 @@ inline typename iterator_traits<Iterator>::iterator_category iterator_category(
  * ! a flag arugemnts to distinguish different iterator, thus  speical fucnntion
  * ! is served.
  */
-template <class InputIterator>
-inline typename iterator_traits<InputIterator>::difference_type distance(
-    InputIterator first, InputIterator last) {
-    return __distance(first, last, iterator_category(first));
-}
+
 template <class InputIterator>
 inline typename iterator_traits<InputIterator>::difference_type __distance(
     InputIterator first, InputIterator last, input_iterator_tag) {
@@ -99,6 +95,11 @@ inline typename iterator_traits<RandomAccessIterator>::difference_type
 __distance(RandomAccessIterator first, RandomAccessIterator last,
            random_access_iterator_tag) {
     return last - first;
+}
+template <class InputIterator>
+inline typename iterator_traits<InputIterator>::difference_type distance(
+    InputIterator first, InputIterator last) {
+    return __distance(first, last, iterator_category(first));
 }
 
 /**

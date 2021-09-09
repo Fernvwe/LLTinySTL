@@ -3,9 +3,9 @@
 
 #include <cstddef>  // for ptrdiff_t,size_t
 
+#include "llalgorithm.h"
 #include "llalloc.h"
 #include "lliterator.h"
-#include "llalgorithm.h"
 
 namespace LL {
 template <class T>
@@ -18,7 +18,7 @@ class __list_node {
     T data;
 };
 template <class T>
-class __list_iterator {
+class __list_iterator : public iterator<bidirectional_iterator_tag, T> {
    public:
     // base class member type;
     using iterator_category = bidirectional_iterator_tag;
@@ -115,10 +115,11 @@ class list {
     list() { empty_initialize(); }
     // other type iterator constructor
     template <class IteratorOther>
-    list(IteratorOther begin, IteratorOther end){
-        // because the list is bidirection iterator, so we only need the operator ++.
+    list(IteratorOther begin, IteratorOther end) {
+        // because the list is bidirection iterator, so we only need the
+        // operator ++.
         empty_initialize();
-        while(begin != end){
+        while (begin != end) {
             push_back(*begin);
             ++begin;
         }
@@ -182,15 +183,16 @@ class list {
     void merge(list& x);
     void reverse();
     void sort();
-    void swap(list &x){
-        LL::swap(node, x.node);
-    }
+    void _list_sort(iterator l, iterator r);
+    // void _divide(iterator l, iterator r);
+    // void _merge(iterator lsta, iterator lend, iterator rsta, iterator rend);
+    void swap(list& x) { LL::swap(node, x.node); }
     // Join x before the position pointed to by posi, x must be different from
     // *this.
     void splice(iterator posi, list& x) {
         if (!x.empty()) transfer(posi, x.begin(), x.end());
     }
-    // Join i before the position pointed to  by posi, position and i could
+    // Join i before the position pointed to by posi, position and i could
     // point the same one.
     void splice(iterator posi, list&, iterator i) {
         iterator j = i;
@@ -255,32 +257,89 @@ void list<T, Allocator>::reverse() {
         transfer(begin(), old, first);
     }
 }
+// template <class T, class Allocator>
+// void list<T, Allocator>::_merge(list<T, Allocator>::iterator lsta,
+//                                 list<T, Allocator>::iterator lend,
+//                                 list<T, Allocator>::iterator rsta,
+//                                 list<T, Allocator>::iterator rend) {
+//     using ite =list<T, Allocator>::iterator;
+//     ite head = lsta;
+//     list<T, Allocator> tmp;
+//     while(lsta.node != lend.node && rsta.node != rend.node){
+//         if(lsta.node->data < rsta.node->data){
+//             tmp.push_back(lsta.node->data);
+//             ++lsta;
+//         }else{
+//             tmp.push_back(rsta.node->data);
+//         }
+//     }
+// }
+// template <class T, class Allocator>
+// void list<T, Allocator>::_divide(list<T, Allocator>::iterator l,
+//                                  list<T, Allocator>::iterator r) {
+//     using ite = list<T, Allocator>::iterator;
+//     using list = list<T, Allocator>;
+//     if (l.node->next == r.node) return;
+//     ite slow = l, fast = l;
+//     while (fast.node != r.node) {
+//         ++fast;
+//         ++fast;
+//         ++slow;
+//     }
+//     list lef(l,slow);
+//     list rig(slow,r);
+//     merge(lef,rig);
+// }
+template <class T, class Allocator>
+void list<T, Allocator>::_list_sort(typename list<T, Allocator>::iterator l,
+                                    typename list<T, Allocator>::iterator r) {
+    using ite = typename list<T, Allocator>::iterator;
+    if (l.node->next == r.node) return;
+    ite slow(l), fast(l);
+    while (fast.node != r.node && fast.node->next != r.node) {
+        ++fast;
+        ++fast;
+        ++slow;
+    }
+    _list_sort(l, slow);
+    _list_sort(slow, r);
+    list<T, Allocator> tmp;
+    ite i(l), j(slow);
+    while (i != slow && j != r) {
+        if (*i <= *j) {
+            tmp.push_back(*i);
+            ++i;
+        } else {
+            tmp.push_back(*j);
+            ++j;
+        }
+    }
+    while (i != slow) {
+        tmp.push_back(*i);
+        ++i;
+    }
+    while (j != r) {
+        tmp.push_back(*j);
+        ++j;
+    }
+    ite data(tmp.begin());
+    while (l.node != r.node) {   
+        *l = *data;
+        ++l;
+        ++data;
+    }
+}
 // sort() member function
-// TODO need to reconstruct 
 template <class T, class Allocator>
 void list<T, Allocator>::sort() {
-    if (node->next == node || node->next->next == node) return;
-    list<T, Allocator> carry;
-    list<T, Allocator> counter[64];
-    int fill = 0;
-    while (!empty()) {
-        carry.splice(carry.begin(), *this, begin());
-        int i = 0;
-        while (i < fill && !counter[i].empty()) {
-            counter[i].merge(carry);
-            carry.swap(counter[i++]);
-        }
-        carry.swap(counter[i]);
-        if (i == fill) ++fill;
-    }
-    for (int i = 1; i < fill; ++i) counter[i].merge(counter[i - 1]);
-    swap(counter[fill - 1]);
+    // mergeSort
+    if (node == node->next || node == node->next->next) return;
+    _list_sort(begin(), end());
 }
 
-template<typename T>
-void swap(list<T>& a, list<T> b){
+template <typename T>
+void swap(list<T>& a, list<T> b) {
     a.swap(b);
 }
-
 }  // namespace LL
 #endif
