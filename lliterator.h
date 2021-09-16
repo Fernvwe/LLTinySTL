@@ -22,7 +22,7 @@ struct random_access_iterator_tag : public bidirectional_iterator_tag {};
  */
 template <class Catrgory, class T, class Distance = ptrdiff_t,
           class Pointer = T*, class Reference = T&>
-struct iterator {
+class iterator {
     using iterator_category = Catrgory;
     using value_type = T;
     using pointer = Pointer;
@@ -74,12 +74,11 @@ inline typename iterator_traits<Iterator>::iterator_category iterator_category(
 
 /**
  * distance() return the distance of two iterator.
- * ! __distance() is  the implement of distance().
- * ! because sepicalization template function is not allowed. So, we need to use
- * ! a flag arugemnts to distinguish different iterator, thus  speical fucnntion
- * ! is served.
+ *  __distance() is  the implement of distance().
+ *  because sepicalization template function is not allowed. So, we need to use
+ *  a flag arugemnts to distinguish different iterator, thus  speical fucnntion
+ *  is served.
  */
-
 template <class InputIterator>
 inline typename iterator_traits<InputIterator>::difference_type __distance(
     InputIterator first, InputIterator last, input_iterator_tag) {
@@ -102,22 +101,104 @@ inline typename iterator_traits<InputIterator>::difference_type distance(
     return __distance(first, last, iterator_category(first));
 }
 
+// template class: reverse iterator
+template <class Iterator>
+class reverse_iterator {
+   private:
+    Iterator current;  // record forward iterator
+   public:
+    using iterator_category = typename iterator_traits<Iterator>::iterator_category;
+    using value_type = typename iterator_traits<Iterator>::value_type;
+    using difference_type = typename iterator_traits<Iterator>::difference_type;
+    using pointer = typename iterator_traits<Iterator>::pointer;
+    using reference = typename iterator_traits<Iterator>::reference;
+
+    using self = reverse_iterator<Iterator>;
+
+   public:
+    reverse_iterator() {}
+    reverse_iterator(Iterator i) : current(i) {}
+    self& operator=(const self& rhs) { current = rhs.current; }
+    reference operator*() const {
+        auto tmp = current;
+        return *(--tmp);
+    }
+    pointer operator->() const { return &(operator*()); }
+    self& operator++() {
+        --current;
+        return *this;
+    }
+    self operator++(int) {
+        self tmp = *this;
+        --current;
+        return tmp;
+    }
+    self& operator--() {
+        ++current;
+        return *this;
+    }
+    self operator--(int) {
+        self tmp = *this;
+        ++current;
+        return tmp;
+    }
+    self& operator+=(difference_type n) {
+        current -= n;
+        return *this;
+    }
+    self operator+(difference_type n) { return static_cast<self>(current - n); }
+    self& operator-=(difference_type n) {
+        current += n;
+        return *this;
+    }
+    self operator-(difference_type n) { return static_cast<self>(current + n); }
+    reference operator[](difference_type n) const { return *(*this + n); }
+    // return forward iterator
+    Iterator base() const { return current; }
+};
+
+template <class Iter>
+bool operator==(const reverse_iterator<Iter> lhs, const reverse_iterator<Iter> rhs){
+    return lhs.base() == rhs.base();
+}
+template <class Iter>
+bool operator!=(const reverse_iterator<Iter> lhs, const reverse_iterator<Iter> rhs){
+    return lhs.base() != rhs.base();
+}
+template <class Iter>
+bool operator<(const reverse_iterator<Iter> lhs, const reverse_iterator<Iter> rhs){
+    return lhs.base() < rhs.base();
+}
+template <class Iter>
+bool operator<=(const reverse_iterator<Iter> lhs, const reverse_iterator<Iter> rhs){
+    return lhs.base() <= rhs.base();
+}
+template <class Iter>
+bool operator>(const reverse_iterator<Iter> lhs, const reverse_iterator<Iter> rhs){
+    return lhs.base() > rhs.base();
+}
+template <class Iter>
+bool operator>=(const reverse_iterator<Iter> lhs, const reverse_iterator<Iter> rhs){
+    return lhs.base() >= rhs.base();
+}
+
 /**
  * advance() make iterator advance n step.
  */
-template<class InputIterator, class Distance>
-inline void advance(InputIterator& i, Distance n){
+template <class InputIterator, class Distance>
+inline void advance(InputIterator& i, Distance n) {
     __advance(i, n, iterator_category(i));
 }
-template<class InputIterator, class Distance>
-inline void __advance(InputIterator& i, Distance n, input_iterator_tag){
-    if( n >= 0)
-        while( n-- ) ++i;
+template <class InputIterator, class Distance>
+inline void __advance(InputIterator& i, Distance n, input_iterator_tag) {
+    if (n >= 0)
+        while (n--) ++i;
     else
-        while( n++ ) --i;
+        while (n++) --i;
 }
-template<class RandomAccessIterator, class Distance>
-inline void __advance(RandomAccessIterator& i, Distance n, random_access_iterator_tag){
+template <class RandomAccessIterator, class Distance>
+inline void __advance(RandomAccessIterator& i, Distance n,
+                      random_access_iterator_tag) {
     i += n;
 }
 }  // namespace LL

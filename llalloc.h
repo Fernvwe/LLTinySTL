@@ -49,10 +49,10 @@ class allocator {
     struct rebind {
         using other = allocator<U>;
     };
-    pointer allocate(size_type n, const void* hint = 0) {
+    pointer static  allocate(size_type n, const void* hint = 0) {
         return _allocate((difference_type)n, (pointer)0);
     }
-    void deallocate(pointer p, size_type n) { _deallocate(p); }
+    void static deallocate(pointer p) { _deallocate(p); }
 
     // the follow functions was remove in c++ 20
     void construct(pointer p, const T& value) { _construct(p, value); }

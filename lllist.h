@@ -129,7 +129,9 @@ class list {
     iterator begin() { return static_cast<link_type>((*node).next); }
     iterator end() { return node; }
     bool empty() const { return node->next == node; }
-    difference_type size() const { return distance(begin(), end()); }
+    difference_type size() { 
+        return distance(begin(), end()); 
+    }
     reference front() { return *begin(); }
     reference back() { return *(--end()); }
     iterator insert(iterator posi, const T& t) {
