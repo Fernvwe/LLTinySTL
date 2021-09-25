@@ -2,7 +2,7 @@
 #define __LLVECTOR_H__
 
 #include <assert.h>
-
+#include <initializer_list> // using initializer_list of stl
 #include <stdexcept>
 
 #include "llalgorithm.h"
@@ -27,9 +27,9 @@ class vector {
     using const_reference = const value_type&;
     using difference_type = ptrdiff_t;
     using allocator_type = Alloc;
-    using reverse_iterator = reverse_iterator<iterator>;
     using const_reverse_iterator = reverse_iterator<const_iterator> ;
-
+    using reverse_iterator = reverse_iterator<iterator>;
+    
    private:
     iterator start;
     iterator finish;
@@ -50,6 +50,7 @@ class vector {
     vector(const vector&, const Alloc&);
     vector(vector&&, const Alloc&);
     // TODO initializer_list<T>
+    vector(std::initializer_list<T>);
     ~vector();
     vector<T, Alloc>& operator=(const vector<T, Alloc>& x);
     vector<T, Alloc>& operator=(vector<T, Alloc>&& x);
@@ -66,8 +67,12 @@ class vector {
     reverse_iterator        rbegin() noexcept{ return reverse_iterator(end()); }
     const_reverse_iterator  rbegin() const noexcept{ return const_reverse_iterator(end());}
     reverse_iterator        rend() noexcept { return reverse_iterator(begin()); }
-    const_reverse_iterator  rend() const noexcept{ return reverse_iterator(begin()); }
+    const_reverse_iterator  rend() const noexcept{ return reverse_iterator(begin());}
 
+    const_iterator cbegin() const noexcept { return begin(); }
+    const_iterator cend() const noexcept { return end(); }
+    const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+    const_reverse_iterator crend() const noexcept { return rend(); }
     // capacity
     size_type size() { return static_cast<size_type>(end() - begin()); }
     bool empty() { return begin() == end(); }
@@ -252,6 +257,19 @@ vector<T, Alloc>::vector(vector&& rhs)
     rhs.start = nullptr;
     rhs.finish = nullptr;
     rhs.end_of_storage = nullptr;
+}
+template <class T, class Alloc>
+vector<T,Alloc>::vector(std::initializer_list<T> arr){
+    Alloc alloc;
+    while(capacity < arr.size())
+        capacity += capacity;
+    start = alloc.allocate( capacity );
+    iterator tmp = start;
+    for(auto const_val : arr){
+        *tmp = const_val;
+        ++tmp;
+    }
+    finish = tmp;
 }
 template <class T, class Alloc>
 vector<T, Alloc>::~vector() {
