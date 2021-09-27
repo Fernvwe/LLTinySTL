@@ -1,11 +1,330 @@
 #ifndef __LLDEQUE_H__
 #define __LLDEQUE_H__
 
+#include <initializer_list>
+
+#include "llalgorithm.h"
 #include "llalloc.h"
+#include "llconstruct.h"
 #include "lliterator.h"
 
+namespace LL {
+
+template <class T, class Alloc = LL::allocator<T>, size_t BufSiz = 7>
+class __deque_iterator {
+   public:
+    using iterator_category = typename LL::random_access_iterator_tag;
+    using value_type = T;
+    using pointer = T*;
+    using reference = T&;
+    using difference_type = ptrdiff_t;
+    using size_type = std::size_t;
+    using self = __deque_iterator<T, Alloc, BufSiz>;
+
+   public:
+    pointer cur;
+    pointer first;
+    pointer last;
+    pointer* node;  // node point to the element of map
+   public:
+    __deque_iterator() {}
+    __deque_iterator(pointer* x) {
+        node = x;
+        first = *(node);
+        last = *(node) + BufSiz;
+        cur = first;
+    }
+    pointer operator->() const { return &(operator*()); }
+    self& operator++() {
+        ++cur;
+        if (cur == last) {
+            set_node(node + 1);
+            cur = first;
+        }
+        return *this;
+    }
+    self operator++(int) {
+        self tmp = *this;
+        ++*this;
+        return tmp;
+    }
+    self& operator--() {
+        --cur;
+        if (cur < first) {
+            set_node(node - 1);
+            cur = first;
+        }
+        return *this;
+    }
+    self operator--(int) {
+        self tmp = *this;
+        --*this;
+        return tmp;
+    }
+    reference operator*() { return *cur; }
+    // TODO 研究为什么 operator += 这样书写!!!
+    self& operator+=(difference_type n) {
+        difference_type offset = static_cast<difference_type>(cur - first + n);
+        if (offset >= 0 && offset < BufSiz) {
+            cur += n;
+        } else {
+            difference_type node_offset =
+                offset > 0
+                    ? offset / static_cast<difference_type>(BufSiz)
+                    : -static_cast<difference_type>((-offset - 1) / BufSiz) - 1;
+            set_node(node + node_offset);
+            cur = first + (offset - BufSiz * node_offset);
+        }
+        return *this;
+    }
+    self operator+(difference_type n) {
+        self tmp = *this;
+        return tmp += n;
+    }
+    self& operator-=(difference_type n) { return *this += -n; }
+    self operator-(difference_type n) {
+        self tmp = *this;
+        return tmp -= n;
+    }
+    difference_type operator-(const self& x) const {
+        difference_type offset =
+            static_cast<difference_type>(cur - first + (x.last - x.cur));
+        difference_type node_offset =
+            static_cast<difference_type>(node - x.node - 1);
+        return offset + node_offset * BufSiz;
+    }
+    reference operator[](difference_type n) const { return *(*this + n); }
+    bool operator==(const self& rhs) { return rhs.cur == cur; }
+    bool operator!=(const self& rhs) { return !(*this == rhs); }
+    void set_node(pointer* new_node) {
+        node = new_node;
+        first = *new_node;
+        last = first + static_cast<difference_type>(BufSiz);
+    }
+};
+
+template <class T, class Allocator = LL::allocator<T>, size_t BufSiz = 7>
+class deque {
+   public:
+    using pointer = T*;
+    using iterator = __deque_iterator<T>;
+    using const_iterator = __deque_iterator<T>;
+    using reverse_iterator = __deque_iterator<T>;
+    using const_reverse_iterator = __deque_iterator<T>;
+    using value_type = T;
+    using reference = value_type&;
+    using const_reference = const value_type&;
+    using size_type = size_t;
+    using difference_type = ptrdiff_t;
+    using allocator_type = Allocator;
+
+   private:
+    using map_pointer = pointer*;  // pointer array
+    using map_alloc_type = LL::allocator<pointer>;
+
+   private:
+    iterator start;
+    iterator finish;
+    map_pointer map;
+    size_type map_size = 11;
+
+   private:
+    void _insert_after_aux(iterator posi, const T& t);
+    void create_map_and_nodes(size_type n);
+    void fill_initialize(size_type n, const value_type& t);
+    void push_back_aux(const value_type& t);
+    void reserve_map_at_back(size_type nodes_to_add = 1);
+    void reallocate_map(size_type nodes_to_add, bool add_at_front);
+
+   public:
+    // construct/copy/destroy:
+    explicit deque(const Allocator& = Allocator());
+    explicit deque(size_type n);
+    deque(size_type n, const T& value);
+    template <class InputIterator>
+    deque(InputIterator first, InputIterator last,
+          const Allocator& = Allocator());
+    deque(const deque<T, Allocator>& x);
+    deque(deque&&);
+    deque(const deque&, const Allocator&);
+    deque(deque&&, const Allocator&);
+    deque(std::initializer_list<T>, const Allocator& = Allocator());
+    ~deque();
+    deque<T, Allocator>& operator=(const deque<T, Allocator>& x);
+    deque<T, Allocator>& operator=(deque<T, Allocator>&& x);
+    deque& operator=(std::initializer_list<T>);
+    template <class InputIterator>
+    void assign(InputIterator first, InputIterator last);
+    void assign(size_type n, const T& t);
+    void assign(std::initializer_list<T>);
+    allocator_type get_allocator() const noexcept;
+
+    // iterators:
+    iterator begin() noexcept { return start; }
+    const_iterator begin() const noexcept;
+    iterator end() noexcept { return finish; }
+    const_iterator end() const noexcept;
+
+    reverse_iterator rbegin() noexcept;
+    const_reverse_iterator rbegin() const noexcept;
+    reverse_iterator rend() noexcept;
+    const_reverse_iterator rend() const noexcept;
+
+    const_iterator cbegin() noexcept;
+    const_iterator cend() noexcept;
+    const_reverse_iterator crbegin() const noexcept;
+    const_reverse_iterator crend() const noexcept;
+
+    // capacity:
+    size_type size() const noexcept {
+        return static_cast<size_type>(finish - start);
+    }
+    size_type max_size() const noexcept;
+    void resize(size_type sz);
+    void resize(size_type sz, const T& c);
+    void shrink_to_fit();
+    bool empty() const noexcept;
+
+    // element access:
+    reference operator[](size_type n) {
+        return start[static_cast<difference_type>(n)];
+    }
+    const_reference operator[](size_type n) const {
+        return start[static_cast<difference_type>(n)];
+    }
+    reference at(size_type n);
+    const_reference at(size_type n) const;
+    reference front() { return *start; }
+    const_reference front() const { return *start; }
+    reference back() {
+        // return *(finish - 1);
+        iterator tmp = finish;
+        --tmp;
+        return *tmp;
+    }
+    const_reference back() const;
+
+    // modifiers:
+    template <class... Args>
+    void emplace_front(Args&&... args);
+    template <class... Args>
+    void emplace_back(Args&&... args);
+    template <class... Args>
+    iterator emplace(const_iterator position, Args&&... args);
+
+    void push_front(const T& x);
+    void push_front(T&& x);
+    void push_back(const T& x);
+    void push_back(T&& x);
+
+    iterator insert(const_iterator position, const T& x);
+    iterator insert(const_iterator position, T&& x);
+    iterator insert(const_iterator position, size_type n, const T& x);
+    template <class InputIterator>
+    iterator insert(const_iterator position, InputIterator first,
+                    InputIterator last);
+    iterator insert(const_iterator position, std::initializer_list<T>);
+
+    void pop_front();
+    void pop_back();
+
+    iterator erase(const_iterator position);
+    iterator erase(const_iterator first, const_iterator last);
+    void swap(deque<T, Allocator>&);
+    void clear() noexcept;
+};
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::create_map_and_nodes(size_type n) {
+    map_alloc_type map_alloc;
+    allocator_type node_allco;
+    size_type node_size = static_cast<size_type>(n / BufSiz + 1);
+    // ! the node assgin strategy need redesign.
+    map_size = max(node_size + 4, map_size);
+    map = map_alloc.allocate(map_size);
+    map_pointer nstart = map + (map_size - node_size) / 2;
+    // nstart 本身也是一个空间,所以 nfinish被设定为 -1的情况
+    map_pointer nfinish = nfinish + node_size - 1;
+    // ! there may occur exception
+    for (map_pointer cur; cur <= nfinish; ++cur)
+        *cur = node_allco.allocate(BufSiz);
+    start.set_node(nstart);
+    start.cur = *nstart;
+    finish.set_node(nfinish);
+    finish.cur = *nfinish + static_cast<difference_type>(n % BufSiz);
+}
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::fill_initialize(size_type n,
+                                                  const value_type& t) {
+    create_map_and_nodes(n);
+    map_pointer cur;
+    for (cur = start.node; cur < finish.node; ++cur)
+        unintialize_fill(*cur, *cur + BufSiz, t);
+    unintialize_fill(finish.first, finish.cur, t);
+}
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::deque(size_type n, const value_type& t)
+    : start(), finish(), map(nullptr) {
+    fill_initialize(n, t);
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::push_back(const T& x) {
+    if (finish.cur != finish.last - 1) {
+        construct(finish.cur, x);
+        ++finish.cur;
+    } else {
+        push_back_aux(x);
+    }
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::push_back_aux(const T& x) {
+    if (finish.node + 1 == map + map_size) reserve_map_at_back();
+    allocator_type buffer_alloc = Allocator();
+    *(finish.node + 1) = buffer_alloc.allocate(BufSiz);
+    *(finish.cur) = x;
+    ++finish;
+}
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::reserve_map_at_back(size_type nodes_to_add) {
+    // * 任务是申请新的空间,同时保持相对的map分布不变.
+    if (nodes_to_add + 1 > map_size - static_cast<size_type>(finish.node - map))
+        reallocate_map(nodes_to_add, false);
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::reallocate_map(size_type nodes_to_add,
+                                                 bool add_at_front) {
+    size_type old_num_nodes = finish.node - start.node + 1;
+    size_type new_num_nodes = old_num_nodes + nodes_to_add;
+
+    map_pointer new_nstart;
+    // 如果出现一端数据过于长,而一端几乎没有数据,则重新修改node的起点
+    if (map_size > 2 * new_num_nodes) {
+        // 为什么当 add_at_front is true,
+        // 起点会向后偏移,为在前面插入的元素留下空间
+        new_nstart = map + (map_size - new_num_nodes) / 2 +
+                     (add_at_front ? nodes_to_add : 0);
+        if (new_nstart < start.node)
+            copy(start.node, finish.node + 1, new_nstart);
+        else
+            copy_backward(start.node, finish.node + 1,
+                          new_nstart + old_num_nodes);
+    } else {  // 如果实在是空间不足,则需要重新申请一个map空间
+        map_alloc_type map_alloc;
+        size_type new_map_size = map_size + max(map_size, nodes_to_add) + 2;
+        map_pointer new_map = map_alloc.allocate(new_map_size);
+        new_nstart = new_map + (new_map_size - new_num_nodes) / 2 +
+                     (add_at_front ? nodes_to_add : 0);
+        copy(start.node, finish.node + 1, new_nstart);
+        map_alloc.deallocate(map);
+        map = new_map;
+        map_size = new_map_size;
+    }
+    start.set_node(new_nstart);
+    finish.set_node(new_nstart + old_num_nodes - 1);
+}
+}  // namespace LL
 
 #endif
-
-
-
