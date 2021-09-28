@@ -18,3 +18,14 @@ target_link_directories(2vector
     PRIVATE 
         ${PROJECT_SOURCE_DIR}
 )
+
+add_executable(2deque 2deque.cpp)
+target_link_directories(2deque
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)
+add_executable(2algorithm 2algorithm.cpp)
+target_link_directories(2algorithm
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)

@@ -133,9 +133,10 @@ class deque {
     void create_map_and_nodes(size_type n);
     void fill_initialize(size_type n, const value_type& t);
     void push_back_aux(const value_type& t);
+    void push_front_aux(const value_type& t);
     void reserve_map_at_back(size_type nodes_to_add = 1);
+    void reserve_map_at_front(size_type nodes_to_add = 1);
     void reallocate_map(size_type nodes_to_add, bool add_at_front);
-
    public:
     // construct/copy/destroy:
     explicit deque(const Allocator& = Allocator());
@@ -277,7 +278,15 @@ void deque<T, Allocator, BufSiz>::push_back(const T& x) {
         push_back_aux(x);
     }
 }
-
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::push_front(const T& x) {
+    if (start.cur != start.first) {
+        construct(start.cur, x);
+        --start.cur;
+    } else {
+        push_front_aux(x);
+    }
+}
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_back_aux(const T& x) {
     if (finish.node + 1 == map + map_size) reserve_map_at_back();
@@ -287,12 +296,25 @@ void deque<T, Allocator, BufSiz>::push_back_aux(const T& x) {
     ++finish;
 }
 template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::push_front_aux(const T& x) {
+    if(start.node == map) reserve_map_at_front();
+    allocator_type buffer_alloc = Allocator();
+    *(start.node - 1) = buffer_alloc.allocate(BufSiz);
+    *(start.cur) = x; // 这里还有一个空间,可以直接存入数据.而后再跳转到下一Buffer
+    --start;
+}
+template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::reserve_map_at_back(size_type nodes_to_add) {
     // * 任务是申请新的空间,同时保持相对的map分布不变.
     if (nodes_to_add + 1 > map_size - static_cast<size_type>(finish.node - map))
         reallocate_map(nodes_to_add, false);
 }
-
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::reserve_map_at_front(size_type nodes_to_add) {
+    // * 任务是申请新的空间,同时保持相对的map分布不变.
+    if (nodes_to_add + 1 > static_cast<size_type>(start.node - map))
+        reallocate_map(nodes_to_add, true);
+}
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::reallocate_map(size_type nodes_to_add,
                                                  bool add_at_front) {
@@ -302,8 +324,7 @@ void deque<T, Allocator, BufSiz>::reallocate_map(size_type nodes_to_add,
     map_pointer new_nstart;
     // 如果出现一端数据过于长,而一端几乎没有数据,则重新修改node的起点
     if (map_size > 2 * new_num_nodes) {
-        // 为什么当 add_at_front is true,
-        // 起点会向后偏移,为在前面插入的元素留下空间
+    // 为什么当 add_at_front is true, 起点会向后偏移,为在前面插入的元素留下空间
         new_nstart = map + (map_size - new_num_nodes) / 2 +
                      (add_at_front ? nodes_to_add : 0);
         if (new_nstart < start.node)
