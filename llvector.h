@@ -2,8 +2,10 @@
 #define __LLVECTOR_H__
 
 #include <assert.h>
-#include <initializer_list> // using initializer_list of stl
+
+#include <initializer_list>  // using initializer_list of stl
 #include <stdexcept>
+#include <type_traits>
 
 #include "llalgorithm.h"
 #include "llalloc.h"
@@ -27,9 +29,9 @@ class vector {
     using const_reference = const value_type&;
     using difference_type = ptrdiff_t;
     using allocator_type = Alloc;
-    using const_reverse_iterator = reverse_iterator<const_iterator> ;
+    using const_reverse_iterator = reverse_iterator<const_iterator>;
     using reverse_iterator = reverse_iterator<iterator>;
-    
+
    private:
     iterator start;
     iterator finish;
@@ -39,12 +41,14 @@ class vector {
    private:
     void insert_aux(const_iterator posi, const value_type& t);
     void remove(const_iterator posi);
+
    public:
     // construct/copy/destory
     explicit vector(const Alloc& = Alloc());
     explicit vector(size_type n);
     vector(size_type n, const T& value, const Alloc& = Alloc());
-    template <class InputIt>
+    template <class InputIt, class = typename std::enable_if<
+                                 !std::is_integral<InputIt>::value>::type>
     vector(InputIt first, InputIt last, const Alloc& = Alloc());
     vector(vector&&);
     vector(const vector&, const Alloc&);
@@ -64,10 +68,14 @@ class vector {
     const_iterator begin() const noexcept { return start; }
     iterator end() noexcept { return finish; }
     const_iterator end() const noexcept { return finish; }
-    reverse_iterator        rbegin() noexcept{ return reverse_iterator(end()); }
-    const_reverse_iterator  rbegin() const noexcept{ return const_reverse_iterator(end());}
-    reverse_iterator        rend() noexcept { return reverse_iterator(begin()); }
-    const_reverse_iterator  rend() const noexcept{ return reverse_iterator(begin());}
+    reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const noexcept {
+        return const_reverse_iterator(end());
+    }
+    reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+    const_reverse_iterator rend() const noexcept {
+        return reverse_iterator(begin());
+    }
 
     const_iterator cbegin() const noexcept { return begin(); }
     const_iterator cend() const noexcept { return end(); }
@@ -96,11 +104,11 @@ class vector {
     void reserve();
     void clear();
     void insert(const_iterator posi, const value_type& t);
-    template <class  InputIt>
+    template <class InputIt>
     void insert(const_iterator posi, InputIt first, InputIt last);
-    void erase(const_iterator posi){ remove(posi); }
+    void erase(const_iterator posi) { remove(posi); }
     void erase(const_iterator first, const_iterator last);
-    
+
     void swap(vector<T>& rhs) {
         LL::swap(start, rhs.start);
         LL::swap(finish, rhs.finish);
@@ -153,15 +161,16 @@ void vector<T, Alloc>::insert_aux(const_iterator posi, const value_type& t) {
     }
 }
 template <class T, class Alloc>
-void vector<T,Alloc>::insert(const_iterator posi, const value_type& t){
-    insert_aux(posi,t);
+void vector<T, Alloc>::insert(const_iterator posi, const value_type& t) {
+    insert_aux(posi, t);
 }
 template <class T, class Alloc>
-template <class  InputIt>
-void vector<T,Alloc>::insert(const_iterator posi, InputIt first, InputIt last){
+template <class InputIt>
+void vector<T, Alloc>::insert(const_iterator posi, InputIt first,
+                              InputIt last) {
     assert(first <= last);
-    while(first < last){
-        insert(posi,*first);
+    while (first < last) {
+        insert(posi, *first);
         ++first;
     }
 }
@@ -234,7 +243,7 @@ vector<T, Alloc>::vector(size_type n, const T& value, const Alloc& alloc) {
     finish = start + i;
 }
 template <class T, class Alloc>
-template <class InputIt>
+template <class InputIt, class >
 vector<T, Alloc>::vector(InputIt first, InputIt last, const Alloc& alloc) {
     while (capacity < last - first) capacity *= 2;
     start = alloc.allocate(capacity);
@@ -259,13 +268,12 @@ vector<T, Alloc>::vector(vector&& rhs)
     rhs.end_of_storage = nullptr;
 }
 template <class T, class Alloc>
-vector<T,Alloc>::vector(std::initializer_list<T> arr){
+vector<T, Alloc>::vector(std::initializer_list<T> arr) {
     Alloc alloc;
-    while(capacity < arr.size())
-        capacity += capacity;
-    start = alloc.allocate( capacity );
+    while (capacity < arr.size()) capacity += capacity;
+    start = alloc.allocate(capacity);
     iterator tmp = start;
-    for(auto const_val : arr){
+    for (auto const_val : arr) {
         *tmp = const_val;
         ++tmp;
     }
@@ -296,12 +304,14 @@ vector<T, Alloc>& vector<T, Alloc>::operator=(vector<T, Alloc>&& x) {
     x.capacity = nullptr;
 }
 template <class T, class Alloc>
-void vector<T, Alloc>::erase(const_iterator first, const_iterator last){
+void vector<T, Alloc>::erase(const_iterator first, const_iterator last) {
     assert(first < last);
-    if(last >= finish){ return; }
+    if (last >= finish) {
+        return;
+    }
     iterator tmp = static_cast<iterator>(last);
     tmp--;
-    while(tmp < first){
+    while (tmp < first) {
         remove(tmp);
         --tmp;
     }

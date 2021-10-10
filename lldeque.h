@@ -2,6 +2,7 @@
 #define __LLDEQUE_H__
 
 #include <initializer_list>
+#include <type_traits>
 
 #include "llalgorithm.h"
 #include "llalloc.h"
@@ -13,7 +14,7 @@ namespace LL {
 template <class T, class Alloc = LL::allocator<T>, size_t BufSiz = 7>
 class __deque_iterator {
    public:
-    using iterator_category = typename LL::random_access_iterator_tag;
+    using iterator_category = LL::random_access_iterator_tag;
     using value_type = T;
     using pointer = T*;
     using reference = T&;
@@ -52,7 +53,7 @@ class __deque_iterator {
         --cur;
         if (cur < first) {
             set_node(node - 1);
-            cur = first;
+            cur = last - 1;
         }
         return *this;
     }
@@ -137,19 +138,19 @@ class deque {
     void reserve_map_at_back(size_type nodes_to_add = 1);
     void reserve_map_at_front(size_type nodes_to_add = 1);
     void reallocate_map(size_type nodes_to_add, bool add_at_front);
+
    public:
     // construct/copy/destroy:
     explicit deque(const Allocator& = Allocator());
     explicit deque(size_type n);
     deque(size_type n, const T& value);
-    template <class InputIterator>
-    deque(InputIterator first, InputIterator last,
-          const Allocator& = Allocator());
+    template <class InputIterator,
+              class = typename std::enable_if<
+                  !std::is_integral<InputIterator>::value>::type>
+    deque(InputIterator first, InputIterator last);
     deque(const deque<T, Allocator>& x);
-    deque(deque&&);
-    deque(const deque&, const Allocator&);
-    deque(deque&&, const Allocator&);
-    deque(std::initializer_list<T>, const Allocator& = Allocator());
+    deque(deque<T, Allocator>&&);
+    deque(std::initializer_list<T>);
     ~deque();
     deque<T, Allocator>& operator=(const deque<T, Allocator>& x);
     deque<T, Allocator>& operator=(deque<T, Allocator>&& x);
@@ -214,12 +215,12 @@ class deque {
     iterator emplace(const_iterator position, Args&&... args);
 
     void push_front(const T& x);
-    void push_front(T&& x);
+    // void push_front(T&& x);
     void push_back(const T& x);
-    void push_back(T&& x);
+    // void push_back(T&& x);
 
     iterator insert(const_iterator position, const T& x);
-    iterator insert(const_iterator position, T&& x);
+    // iterator insert(const_iterator position, T&& x);
     iterator insert(const_iterator position, size_type n, const T& x);
     template <class InputIterator>
     iterator insert(const_iterator position, InputIterator first,
@@ -245,9 +246,9 @@ void deque<T, Allocator, BufSiz>::create_map_and_nodes(size_type n) {
     map = map_alloc.allocate(map_size);
     map_pointer nstart = map + (map_size - node_size) / 2;
     // nstart 本身也是一个空间,所以 nfinish被设定为 -1的情况
-    map_pointer nfinish = nfinish + node_size - 1;
+    map_pointer nfinish = nstart + node_size - 1;
     // ! there may occur exception
-    for (map_pointer cur; cur <= nfinish; ++cur)
+    for (map_pointer cur = nstart; cur <= nfinish; ++cur)
         *cur = node_allco.allocate(BufSiz);
     start.set_node(nstart);
     start.cur = *nstart;
@@ -270,6 +271,81 @@ deque<T, Allocator, BufSiz>::deque(size_type n, const value_type& t)
 }
 
 template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::deque(const Allocator& alloc)
+    : start(), finish(), map(nullptr) {
+    map_alloc_type map_alloc;
+    allocator_type node_alloc;
+    map = map_alloc.allocate(map_size);
+    map_pointer n_start = map + map_size / 2;
+    *(n_start) = node_alloc.allocate(BufSiz);
+    start.set_node(n_start);
+    finish.set_node(n_start);
+    start.cur = start.first;
+    finish.cur = start.first;
+}
+
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::deque(size_type n)
+    : start(), finish(), map(nullptr) {
+    create_map_and_nodes(n);
+}
+template <class T, class Allocator, size_t BufSiz>
+template <class InputIterator, class >
+deque<T, Allocator, BufSiz>::deque(InputIterator first, InputIterator last) {
+    size_type n = static_cast<size_type>(last - first);
+    create_map_and_nodes(n);
+    iterator tmp = start;
+    for (; first < last; ++first) {
+        construct(tmp, *first);
+        ++tmp;
+    }
+}
+
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::deque(const deque<T, Allocator>& x) {
+    size_type n = x.size();
+    create_map_and_nodes(n);
+    iterator tmp = start;
+    iterator x_tmp = x.begin();
+    while (x_tmp < x.end()) {
+        construct(tmp, *x_tmp);
+        ++tmp;
+        ++x_tmp;
+    }
+}
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::deque(deque<T, Allocator>&& x) {
+    size_type n = x.size();
+    create_map_and_nodes(n);
+    iterator tmp = start;
+    iterator x_tmp = x.begin();
+    while (x_tmp < x.end()) {
+        construct(tmp, *x_tmp);
+        ++tmp;
+        ++x_tmp;
+    }
+}
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::deque(std::initializer_list<T> x) {
+    create_map_and_nodes(x.size());
+    iterator tmp = start;
+    for (auto const_val : x) {
+        construct(tmp, const_val);
+        ++tmp;
+    }
+}
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator, BufSiz>::~deque() {
+    allocator_type node_alloc;
+    map_alloc_type map_alloc;
+    for (iterator tmp = start; start != finish; ++start) {
+        node_alloc.destory(start.cur);
+    }
+    map_alloc.deallocate(map);
+}
+
+
+template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_back(const T& x) {
     if (finish.cur != finish.last - 1) {
         construct(finish.cur, x);
@@ -281,8 +357,8 @@ void deque<T, Allocator, BufSiz>::push_back(const T& x) {
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_front(const T& x) {
     if (start.cur != start.first) {
-        construct(start.cur, x);
         --start.cur;
+        construct(start.cur, x);
     } else {
         push_front_aux(x);
     }
@@ -297,11 +373,12 @@ void deque<T, Allocator, BufSiz>::push_back_aux(const T& x) {
 }
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_front_aux(const T& x) {
-    if(start.node == map) reserve_map_at_front();
+    if (start.node == map) reserve_map_at_front();
     allocator_type buffer_alloc = Allocator();
     *(start.node - 1) = buffer_alloc.allocate(BufSiz);
-    *(start.cur) = x; // 这里还有一个空间,可以直接存入数据.而后再跳转到下一Buffer
     --start;
+    // 这里还有一个空间,可以直接存入数据.而后再跳转到下一Buffer
+    *(start.cur) = x;
 }
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::reserve_map_at_back(size_type nodes_to_add) {
@@ -324,7 +401,8 @@ void deque<T, Allocator, BufSiz>::reallocate_map(size_type nodes_to_add,
     map_pointer new_nstart;
     // 如果出现一端数据过于长,而一端几乎没有数据,则重新修改node的起点
     if (map_size > 2 * new_num_nodes) {
-    // 为什么当 add_at_front is true, 起点会向后偏移,为在前面插入的元素留下空间
+        // 为什么当 add_at_front is true,
+        // 起点会向后偏移,为在前面插入的元素留下空间
         new_nstart = map + (map_size - new_num_nodes) / 2 +
                      (add_at_front ? nodes_to_add : 0);
         if (new_nstart < start.node)
@@ -345,6 +423,29 @@ void deque<T, Allocator, BufSiz>::reallocate_map(size_type nodes_to_add,
     }
     start.set_node(new_nstart);
     finish.set_node(new_nstart + old_num_nodes - 1);
+}
+
+template <class T, class Allocator, size_t BufSiz>
+typename deque<T, Allocator, BufSiz>::iterator
+deque<T, Allocator, BufSiz>::insert(const_iterator posi, const value_type& t) {
+    if (posi == finish)
+        push_back(t);
+    else if (posi == start - 1)
+        push_front(t);
+    else {
+        if (static_cast<difference_type>(posi - start) > size() / 2) {
+            value_type end_val = *((finish - 1).cur);
+            copy_backward(posi, finish - 1, finish);
+            *posi.cur = t;
+            push_back(end_val);
+        } else {
+            value_type sta_val = *(start.cur);
+            copy(start + 1, posi + 1, start);
+            *posi.cur = t;
+            push_front(sta_val);
+        }
+    }
+    return posi;
 }
 }  // namespace LL
 
