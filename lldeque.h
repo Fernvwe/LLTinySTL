@@ -8,6 +8,7 @@
 #include "llalloc.h"
 #include "llconstruct.h"
 #include "lliterator.h"
+#include "llutility.h"
 
 namespace LL {
 
@@ -95,8 +96,11 @@ class __deque_iterator {
         return offset + node_offset * BufSiz;
     }
     reference operator[](difference_type n) const { return *(*this + n); }
-    bool operator==(const self& rhs) { return rhs.cur == cur; }
-    bool operator!=(const self& rhs) { return !(*this == rhs); }
+    bool operator==(const self& rhs) const { return rhs.cur == cur; }
+    bool operator!=(const self& rhs) const { return !(*this == rhs); }
+    bool operator<(const self& rhs) const {
+        return node == rhs.node ? cur < rhs.cur : node < rhs.node;
+    }
     void set_node(pointer* new_node) {
         node = new_node;
         first = *new_node;
@@ -109,9 +113,9 @@ class deque {
    public:
     using pointer = T*;
     using iterator = __deque_iterator<T>;
-    using const_iterator = __deque_iterator<T>;
-    using reverse_iterator = __deque_iterator<T>;
-    using const_reverse_iterator = __deque_iterator<T>;
+    using const_iterator = __deque_iterator<const T>;
+    using reverse_iterator = reverse_iterator<iterator>;
+    using const_reverse_iterator = const reverse_iterator;
     using value_type = T;
     using reference = value_type&;
     using const_reference = const value_type&;
@@ -135,6 +139,8 @@ class deque {
     void fill_initialize(size_type n, const value_type& t);
     void push_back_aux(const value_type& t);
     void push_front_aux(const value_type& t);
+    void pop_back_aux();
+    void pop_front_aux();
     void reserve_map_at_back(size_type nodes_to_add = 1);
     void reserve_map_at_front(size_type nodes_to_add = 1);
     void reallocate_map(size_type nodes_to_add, bool add_at_front);
@@ -154,28 +160,42 @@ class deque {
     ~deque();
     deque<T, Allocator>& operator=(const deque<T, Allocator>& x);
     deque<T, Allocator>& operator=(deque<T, Allocator>&& x);
-    deque& operator=(std::initializer_list<T>);
-    template <class InputIterator>
+    deque<T, Allocator>& operator=(std::initializer_list<T>);
+    template <class InputIterator,
+              class = typename std::enable_if<
+                  !std::is_integral<InputIterator>::value>::type>
     void assign(InputIterator first, InputIterator last);
     void assign(size_type n, const T& t);
     void assign(std::initializer_list<T>);
-    allocator_type get_allocator() const noexcept;
+    allocator_type get_allocator() const noexcept { return allocator_type(); }
 
     // iterators:
     iterator begin() noexcept { return start; }
-    const_iterator begin() const noexcept;
+    const_iterator begin() const noexcept { return start; }
     iterator end() noexcept { return finish; }
-    const_iterator end() const noexcept;
+    const_iterator end() const noexcept { return finish; }
 
-    reverse_iterator rbegin() noexcept;
-    const_reverse_iterator rbegin() const noexcept;
-    reverse_iterator rend() noexcept;
-    const_reverse_iterator rend() const noexcept;
+    reverse_iterator rbegin() noexcept {
+        return static_cast<reverse_iterator>(finish);
+    }
+    const_reverse_iterator rbegin() const noexcept {
+        return static_cast<reverse_iterator>(finish);
+    }
+    reverse_iterator rend() noexcept {
+        return static_cast<reverse_iterator>(start);
+    }
+    const_reverse_iterator rend() const noexcept {
+        return static_cast<reverse_iterator>(start);
+    }
 
-    const_iterator cbegin() noexcept;
-    const_iterator cend() noexcept;
-    const_reverse_iterator crbegin() const noexcept;
-    const_reverse_iterator crend() const noexcept;
+    const_iterator cbegin() noexcept { return start; }
+    const_iterator cend() noexcept { return finish; }
+    const_reverse_iterator crbegin() noexcept {
+        return static_cast<reverse_iterator>(finish);
+    }
+    const_reverse_iterator crend() noexcept {
+        return static_cast<reverse_iterator>(start);
+    }
 
     // capacity:
     size_type size() const noexcept {
@@ -185,7 +205,7 @@ class deque {
     void resize(size_type sz);
     void resize(size_type sz, const T& c);
     void shrink_to_fit();
-    bool empty() const noexcept;
+    bool empty() const noexcept { return start == finish; }
 
     // element access:
     reference operator[](size_type n) {
@@ -194,8 +214,10 @@ class deque {
     const_reference operator[](size_type n) const {
         return start[static_cast<difference_type>(n)];
     }
-    reference at(size_type n);
-    const_reference at(size_type n) const;
+    reference at(size_type n) { return start[static_cast<difference_type>(n)]; }
+    const_reference at(size_type n) const {
+        return start[static_cast<difference_type>(n)];
+    }
     reference front() { return *start; }
     const_reference front() const { return *start; }
     reference back() {
@@ -215,23 +237,22 @@ class deque {
     iterator emplace(const_iterator position, Args&&... args);
 
     void push_front(const T& x);
-    // void push_front(T&& x);
+    //void push_front(T&& x){ emplace_front(move(x)); }
     void push_back(const T& x);
-    // void push_back(T&& x);
+    //void push_back(T&& x){ emplace_back(move(x)); }
 
-    iterator insert(const_iterator position, const T& x);
+    iterator insert(iterator position, const T& x);
     // iterator insert(const_iterator position, T&& x);
-    iterator insert(const_iterator position, size_type n, const T& x);
+    iterator insert(iterator position, size_type n, const T& x);
     template <class InputIterator>
-    iterator insert(const_iterator position, InputIterator first,
-                    InputIterator last);
-    iterator insert(const_iterator position, std::initializer_list<T>);
+    iterator insert(iterator position, InputIterator first, InputIterator last);
+    iterator insert(iterator position, std::initializer_list<T>);
 
     void pop_front();
     void pop_back();
 
-    iterator erase(const_iterator position);
-    iterator erase(const_iterator first, const_iterator last);
+    iterator erase(iterator position);
+    iterator erase(iterator first, iterator last);
     void swap(deque<T, Allocator>&);
     void clear() noexcept;
 };
@@ -290,7 +311,7 @@ deque<T, Allocator, BufSiz>::deque(size_type n)
     create_map_and_nodes(n);
 }
 template <class T, class Allocator, size_t BufSiz>
-template <class InputIterator, class >
+template <class InputIterator, class>
 deque<T, Allocator, BufSiz>::deque(InputIterator first, InputIterator last) {
     size_type n = static_cast<size_type>(last - first);
     create_map_and_nodes(n);
@@ -330,7 +351,7 @@ deque<T, Allocator, BufSiz>::deque(std::initializer_list<T> x) {
     create_map_and_nodes(x.size());
     iterator tmp = start;
     for (auto const_val : x) {
-        construct(tmp, const_val);
+        construct(tmp.cur, const_val);
         ++tmp;
     }
 }
@@ -344,6 +365,60 @@ deque<T, Allocator, BufSiz>::~deque() {
     map_alloc.deallocate(map);
 }
 
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator>& deque<T, Allocator, BufSiz>::operator=(
+    const deque<T, Allocator>& x) {
+    if (x != *this) {
+        start = x.start;
+        finish = x.finish;
+        map_size = x.map_size;
+        map = x.map;
+    }
+    return *this;
+}
+
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator>& deque<T, Allocator, BufSiz>::operator=(
+    deque<T, Allocator>&& x) {
+    swap(x);
+    return *this;
+}
+
+template <class T, class Allocator, size_t BufSiz>
+deque<T, Allocator>& deque<T, Allocator, BufSiz>::operator=(
+    std::initializer_list<T> x) {
+    deque tmp(x);
+    swap(x);
+    return *this;
+}
+template <class T, class Allocator, size_t BufSiz>
+template <class InputIterator,
+          class>  // using SFINAE to avoid some matching problems
+void deque<T, Allocator, BufSiz>::assign(InputIterator first,
+                                         InputIterator last) {
+    for (iterator tmp = start; tmp < finish && first < last; ++tmp) {
+        construct(tmp, *first);
+        ++tmp;
+        ++first;
+    }
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::assign(size_type n, const T& t) {
+    iterator tmp = start;
+    while (n-- > 0 && tmp < finish) {
+        construct(tmp.cur, t);
+        ++tmp;
+    }
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::assign(std::initializer_list<T> _list) {
+    iterator tmp = start;
+    for (auto val : _list) {
+        if (tmp < finish) construct(tmp++, val);
+    }
+}
 
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_back(const T& x) {
@@ -380,6 +455,74 @@ void deque<T, Allocator, BufSiz>::push_front_aux(const T& x) {
     // 这里还有一个空间,可以直接存入数据.而后再跳转到下一Buffer
     *(start.cur) = x;
 }
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::pop_back() {
+    assert(size() > 0);
+    if (finish.cur != finish.first || finish.node == start.node) {
+        _destroy(--finish.cur);
+    } else {
+        pop_back_aux();
+    }
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::pop_back_aux() {
+    // finish.cur -1 == finish.start && finish.node != start.node
+    // free node
+    allocator_type node_alloc;
+    map_pointer tmp = finish.node;
+    --finish;
+    _destroy(finish.cur);
+    node_alloc.deallocate(*tmp);
+    tmp = nullptr;
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::pop_front() {
+    assert(size() > 0);
+    if (start.cur != start.last - 1 || start.node == finish.node) {
+        pointer tmp = start.cur++;
+        _destroy(tmp);
+    } else {
+        pop_front_aux();
+    }
+}
+
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::pop_front_aux() {
+    allocator_type node_alloc;
+    map_pointer tmp_node = start.node;
+    pointer tmp_cur = start.cur;
+    _destroy(tmp_cur);
+    node_alloc.deallocate(*tmp_node);
+    ++start;
+}
+
+template <class T, class Allocator, size_t BufSiz>
+typename deque<T, Allocator, BufSiz>::iterator
+deque<T, Allocator, BufSiz>::erase(iterator position) {
+    if(position == finish - 1){
+        pop_back();
+    }else if(position == start){
+        pop_front();
+    }else{
+        copy(position + 1, finish, position);
+        pop_back();
+    }
+    return position;
+}
+template <class T, class Allocator, size_t BufSiz>
+typename deque<T, Allocator, BufSiz>::iterator
+deque<T,Allocator,BufSiz>::erase(iterator first, iterator last){
+    size_type _len = static_cast<difference_type>(last - first);
+    assert(_len < size());
+    copy(last,finish,first);
+    for(int i = 0; i < _len; ++i)
+        pop_back();
+    return first;
+}
+
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::reserve_map_at_back(size_type nodes_to_add) {
     // * 任务是申请新的空间,同时保持相对的map分布不变.
@@ -427,7 +570,7 @@ void deque<T, Allocator, BufSiz>::reallocate_map(size_type nodes_to_add,
 
 template <class T, class Allocator, size_t BufSiz>
 typename deque<T, Allocator, BufSiz>::iterator
-deque<T, Allocator, BufSiz>::insert(const_iterator posi, const value_type& t) {
+deque<T, Allocator, BufSiz>::insert(iterator posi, const value_type& t) {
     if (posi == finish)
         push_back(t);
     else if (posi == start - 1)
@@ -446,6 +589,30 @@ deque<T, Allocator, BufSiz>::insert(const_iterator posi, const value_type& t) {
         }
     }
     return posi;
+}
+
+// template <class T, class Allocator, size_t BufSiz>
+// template <class... Args>
+// void deque<T,Allocator,BufSiz>::emplace_back(Args&&... args){
+//     if(finish.cur != finish.last - 1){
+//         construct(finish.cur, forward<Args>(args)...);
+//         ++finish.cur;
+//     }else{
+//         reserve_map_at_back();
+//         construct(finish.cur, forward<Args>(args)...);
+//         ++finish;
+//     }
+// }
+template <class T, class Allocator, size_t BufSiz>
+void deque<T, Allocator, BufSiz>::swap(deque<T, Allocator>& x) {
+    swap(start, x.start);
+    swap(finish, x.finish);
+    swap(map, x.map);
+    swap(map_size, x.map_size);
+}
+template <typename T>
+void swap(deque<T> x, deque<T> y) {
+    x.swap(y);
 }
 }  // namespace LL
 

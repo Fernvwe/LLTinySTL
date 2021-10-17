@@ -30,7 +30,7 @@ class vector {
     using difference_type = ptrdiff_t;
     using allocator_type = Alloc;
     using const_reverse_iterator = reverse_iterator<const_iterator>;
-    using reverse_iterator = reverse_iterator<iterator>;
+    using reverse_iterator = reverse_iteratorn<iterator>;
 
    private:
     iterator start;

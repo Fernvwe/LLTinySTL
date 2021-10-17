@@ -1,14 +1,14 @@
 #ifndef __LLTYPE_TRAITS__
 #define __LLTYPE_TRAITS__
 
-namespace LL{
+namespace LL {
 // bool class object
-struct __true_type{};
-struct __false_type{};
+struct __true_type {};
+struct __false_type {};
 
 // type_traits
-template<class type>
-struct __type_traits{
+template <class type>
+struct __type_traits {
     using thsi_dummy_member_must_be_first = __true_type;
     // the default type is false.
     using has_trivial_default_constructor = __false_type;
@@ -18,8 +18,8 @@ struct __type_traits{
     using is_POD_type = __false_type;
 };
 // specialization type_traits
-template<>
-struct __type_traits<char>{
+template <>
+struct __type_traits<char> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -28,8 +28,8 @@ struct __type_traits<char>{
     using is_POD_type = __true_type;
 };
 
-template<>
-struct __type_traits<unsigned char>{
+template <>
+struct __type_traits<unsigned char> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -37,8 +37,8 @@ struct __type_traits<unsigned char>{
     using has_trivial_destructor = __true_type;
     using is_POD_type = __true_type;
 };
-template<>
-struct __type_traits<short>{
+template <>
+struct __type_traits<short> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -46,16 +46,8 @@ struct __type_traits<short>{
     using has_trivial_destructor = __true_type;
     using is_POD_type = __true_type;
 };
-template<>
-struct __type_traits<unsigned short>{
-    using thsi_dummy_member_must_be_first = __true_type;
-    using has_trivial_default_constructor = __true_type;
-    using has_trivial_copy_constructor = __true_type;
-    using has_trivial_assignment_operator = __true_type;
-    using has_trivial_destructor = __true_type;
-    using is_POD_type = __true_type;
-};template<>
-struct __type_traits<int>{
+template <>
+struct __type_traits<unsigned short> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -63,8 +55,8 @@ struct __type_traits<int>{
     using has_trivial_destructor = __true_type;
     using is_POD_type = __true_type;
 };
-template<>
-struct __type_traits<unsigned int>{
+template <>
+struct __type_traits<int> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -72,8 +64,8 @@ struct __type_traits<unsigned int>{
     using has_trivial_destructor = __true_type;
     using is_POD_type = __true_type;
 };
-template<>
-struct __type_traits<long>{
+template <>
+struct __type_traits<unsigned int> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -81,9 +73,8 @@ struct __type_traits<long>{
     using has_trivial_destructor = __true_type;
     using is_POD_type = __true_type;
 };
-
-template<>
-struct __type_traits<unsigned long>{
+template <>
+struct __type_traits<long> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -92,8 +83,18 @@ struct __type_traits<unsigned long>{
     using is_POD_type = __true_type;
 };
 
-template<>
-struct __type_traits<double>{
+template <>
+struct __type_traits<unsigned long> {
+    using thsi_dummy_member_must_be_first = __true_type;
+    using has_trivial_default_constructor = __true_type;
+    using has_trivial_copy_constructor = __true_type;
+    using has_trivial_assignment_operator = __true_type;
+    using has_trivial_destructor = __true_type;
+    using is_POD_type = __true_type;
+};
+
+template <>
+struct __type_traits<double> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -102,7 +103,7 @@ struct __type_traits<double>{
     using is_POD_type = __true_type;
 };
 template <class T>
-struct __type_traits<T*>{
+struct __type_traits<T*> {
     using thsi_dummy_member_must_be_first = __true_type;
     using has_trivial_default_constructor = __true_type;
     using has_trivial_copy_constructor = __true_type;
@@ -111,6 +112,18 @@ struct __type_traits<T*>{
     using is_POD_type = __true_type;
 };
 
-}
+template <class T>
+struct remove_reference {
+    using type = T;
+};
+template <class T>
+struct remove_reference<T&> {
+    using type = T;
+};
+template <class T>
+struct remove_reference<T&&> {
+    using type = T;
+};
+}  // namespace LL
 
 #endif

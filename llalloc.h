@@ -22,6 +22,7 @@ inline T* _allocate(ptrdiff_t size, T*) {
 
 template <class T>
 inline void _deallocate(T* buffer) {
+    if(buffer == nullptr)   return;
     ::operator delete(buffer);
 }
 template <class T0, class T2>

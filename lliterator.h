@@ -22,7 +22,7 @@ struct random_access_iterator_tag : public bidirectional_iterator_tag {};
  */
 template <class Catrgory, class T, class Distance = ptrdiff_t,
           class Pointer = T*, class Reference = T&>
-class iterator {
+struct iterator {
     using iterator_category = Catrgory;
     using value_type = T;
     using pointer = Pointer;
@@ -36,7 +36,7 @@ class iterator {
  *  ! we need to konw xx_traits also are served for algorithm.
  */
 template <class I>
-class iterator_traits {
+struct iterator_traits {
     using iterator_category = typename I::iterator_catergory;
     using value_type = typename I::value_type;
     using difference_type = typename I::difference_type;
@@ -45,7 +45,7 @@ class iterator_traits {
 };
 // specialization of iterator_traits
 template <class I>
-class iterator_traits<I*> {
+struct iterator_traits<I*> {
     using iterator_category =
         random_access_iterator_tag;  // naive pointer is random access.
     using value_type = I;  // Although the iterator type is a const type, we
@@ -56,7 +56,7 @@ class iterator_traits<I*> {
 };
 // specialization of iterator_traits
 template <class I>
-class iterator_traits<const I*> {
+struct iterator_traits<const I*> {
     using iterator_category = random_access_iterator_tag;
     using value_type = I;  // Although the iterator type is a const type, we
                            // also need normal type to definite variable.

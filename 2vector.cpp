@@ -45,8 +45,11 @@ int main(){
         std::cout << it <<" ";
     }
     std::cout<<std::endl;
-    size_t t = 100;
-    LL::vector<int>(t,0);
+    LL::vector<int> c(10,0);
+    for(auto it: c){
+        std::cout << it <<" ";
+    }
+    std::cout<<std::endl;
     system("pause");
     return 0;
 }
