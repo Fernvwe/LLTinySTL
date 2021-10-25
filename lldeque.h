@@ -3,12 +3,13 @@
 
 #include <initializer_list>
 #include <type_traits>
+#include <assert.h>
 
 #include "llalgorithm.h"
 #include "llalloc.h"
-#include "llconstruct.h"
 #include "lliterator.h"
 #include "llutility.h"
+#include "llconstruct.h"
 
 namespace LL {
 
@@ -233,13 +234,13 @@ class deque {
     void emplace_front(Args&&... args);
     template <class... Args>
     void emplace_back(Args&&... args);
-    template <class... Args>
-    iterator emplace(const_iterator position, Args&&... args);
+    // template <class... Args>
+    // iterator emplace(const_iterator position, Args&&... args);
 
     void push_front(const T& x);
-    //void push_front(T&& x){ emplace_front(move(x)); }
+    void push_front(T&& x){ emplace_front(move(x)); }
     void push_back(const T& x);
-    //void push_back(T&& x){ emplace_back(move(x)); }
+    void push_back(T&& x){ emplace_back(move(x)); }
 
     iterator insert(iterator position, const T& x);
     // iterator insert(const_iterator position, T&& x);
@@ -317,7 +318,7 @@ deque<T, Allocator, BufSiz>::deque(InputIterator first, InputIterator last) {
     create_map_and_nodes(n);
     iterator tmp = start;
     for (; first < last; ++first) {
-        construct(tmp, *first);
+        allocator_type::construct(tmp.cur, *first);
         ++tmp;
     }
 }
@@ -329,7 +330,7 @@ deque<T, Allocator, BufSiz>::deque(const deque<T, Allocator>& x) {
     iterator tmp = start;
     iterator x_tmp = x.begin();
     while (x_tmp < x.end()) {
-        construct(tmp, *x_tmp);
+        allocator_type::construct(tmp.cur, *x_tmp);
         ++tmp;
         ++x_tmp;
     }
@@ -341,7 +342,7 @@ deque<T, Allocator, BufSiz>::deque(deque<T, Allocator>&& x) {
     iterator tmp = start;
     iterator x_tmp = x.begin();
     while (x_tmp < x.end()) {
-        construct(tmp, *x_tmp);
+        allocator_type::construct(tmp.cur, *x_tmp);
         ++tmp;
         ++x_tmp;
     }
@@ -351,7 +352,7 @@ deque<T, Allocator, BufSiz>::deque(std::initializer_list<T> x) {
     create_map_and_nodes(x.size());
     iterator tmp = start;
     for (auto const_val : x) {
-        construct(tmp.cur, const_val);
+        allocator_type::construct(tmp.cur, const_val);
         ++tmp;
     }
 }
@@ -397,7 +398,7 @@ template <class InputIterator,
 void deque<T, Allocator, BufSiz>::assign(InputIterator first,
                                          InputIterator last) {
     for (iterator tmp = start; tmp < finish && first < last; ++tmp) {
-        construct(tmp, *first);
+        allocator_type::construct(tmp.cur, *first);
         ++tmp;
         ++first;
     }
@@ -407,7 +408,7 @@ template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::assign(size_type n, const T& t) {
     iterator tmp = start;
     while (n-- > 0 && tmp < finish) {
-        construct(tmp.cur, t);
+        allocator_type::construct(tmp.cur, t);
         ++tmp;
     }
 }
@@ -416,14 +417,17 @@ template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::assign(std::initializer_list<T> _list) {
     iterator tmp = start;
     for (auto val : _list) {
-        if (tmp < finish) construct(tmp++, val);
+        if (tmp < finish) {
+            allocator_type::construct(tmp.cur, val);
+            ++tmp;
+        }
     }
 }
 
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_back(const T& x) {
     if (finish.cur != finish.last - 1) {
-        construct(finish.cur, x);
+        allocator_type::construct(finish.cur, x);
         ++finish.cur;
     } else {
         push_back_aux(x);
@@ -433,7 +437,7 @@ template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::push_front(const T& x) {
     if (start.cur != start.first) {
         --start.cur;
-        construct(start.cur, x);
+        allocator_type::construct(start.cur, x);
     } else {
         push_front_aux(x);
     }
@@ -591,18 +595,34 @@ deque<T, Allocator, BufSiz>::insert(iterator posi, const value_type& t) {
     return posi;
 }
 
-// template <class T, class Allocator, size_t BufSiz>
-// template <class... Args>
-// void deque<T,Allocator,BufSiz>::emplace_back(Args&&... args){
-//     if(finish.cur != finish.last - 1){
-//         construct(finish.cur, forward<Args>(args)...);
-//         ++finish.cur;
-//     }else{
-//         reserve_map_at_back();
-//         construct(finish.cur, forward<Args>(args)...);
-//         ++finish;
-//     }
-// }
+template <class T, class Allocator, size_t BufSiz>
+template <class... Args>
+void deque<T,Allocator,BufSiz>::emplace_back(Args&&... args){
+    if(finish.cur != finish.last - 1){
+        allocator_type::construct(finish.cur, forward<Args>(args)...);
+        ++finish.cur;
+    }else{
+        if(finish.node + 1 == map + map_size) 
+            reserve_map_at_back();
+        *(finish.node + 1) = allocator_type::allocate(BufSiz);
+        allocator_type::construct(finish.cur, forward<Args>(args)...);
+        ++finish;
+    }
+}
+template <class T, class Allocator, size_t BufSiz>
+template <class... Args>
+void deque<T,Allocator,BufSiz>::emplace_front(Args&&... args){
+    if(start.cur != start.first ){
+        allocator_type::construct(start.cur, forward<Args>(args)...);
+        --start.cur;
+    }else{
+        if(start.node == map)
+            reserve_map_at_front();
+        *(start.node - 1) = allocator_type::allocate(BufSiz);
+        --start;
+        allocator_type::construct(start.cur, forward<Args>(args)...);
+    }
+}
 template <class T, class Allocator, size_t BufSiz>
 void deque<T, Allocator, BufSiz>::swap(deque<T, Allocator>& x) {
     swap(start, x.start);

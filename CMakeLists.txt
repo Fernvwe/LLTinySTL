@@ -29,3 +29,9 @@ target_link_directories(2algorithm
     PRIVATE 
         ${PROJECT_SOURCE_DIR}
 )
+
+add_executable(2stackAqueue 2stackAqueue.cpp)
+target_link_directories(2stackAqueue
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)

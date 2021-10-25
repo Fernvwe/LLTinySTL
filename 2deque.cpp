@@ -27,6 +27,9 @@ int main(){
     for(int i = 0; i < 5; ++i){
         b.push_back(2);
     }
+    for(int i = 0; i < 5; ++i){
+        b.push_front(10);
+    }
     b.insert(b.end() - 2, 0);
     b.insert(b.begin(), 0);
     for(auto a : b){

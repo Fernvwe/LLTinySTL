@@ -30,7 +30,7 @@ class vector {
     using difference_type = ptrdiff_t;
     using allocator_type = Alloc;
     using const_reverse_iterator = reverse_iterator<const_iterator>;
-    using reverse_iterator = reverse_iteratorn<iterator>;
+    using reverse_iterator = reverse_iterator<iterator>;
 
    private:
     iterator start;
@@ -100,6 +100,8 @@ class vector {
     // modifier
     void push_back(value_type&& t);
     void push_back(const value_type& t);
+    template <class... Args>
+    void emplace_back(Args&&... args);
     void pop_back() { remove(end() - 1); }
     void reserve();
     void clear();
@@ -192,6 +194,16 @@ void vector<T, Alloc>::push_back(value_type&& t) {
         insert_aux(end(), t);
     }
 }
+// template <class T, class Alloc>
+// template <class... Args>
+// void vector<T,Alloc>::emplace_back(Args&&... args){
+//     if(finish != end_of_storage){
+//         allocator_type::construct(finish, args...);
+//         ++finish;
+//     }else{
+        
+//     }
+// }
 template <class T, class Alloc>
 void vector<T, Alloc>::reserve() {
     size_t l = 0, r = size() - 1;
