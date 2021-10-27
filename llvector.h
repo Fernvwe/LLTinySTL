@@ -40,7 +40,8 @@ class vector {
 
    private:
     void insert_aux(const_iterator posi, const value_type& t);
-    void remove(const_iterator posi);
+    void remove(const iterator& posi);
+    void reallocate_space();
 
    public:
     // construct/copy/destory
@@ -119,52 +120,38 @@ class vector {
     }
 };
 template <class T, class Alloc>
+void vector<T, Alloc>::reallocate_space() {
+    capacity = 2 * capacity;
+    difference_type vec_size = size();
+    iterator new_start = Alloc::allocate(capacity);
+    copy(start, finish, new_start);
+    LL::swap(start, new_start);
+    Alloc::deallocate(new_start);
+    finish = start + vec_size;
+    end_of_storage = start + capacity;
+}
+template <class T, class Alloc>
 void vector<T, Alloc>::insert_aux(const_iterator posi, const value_type& t) {
     auto pos = const_cast<iterator>(posi);
-    if (finish != end_of_storage) {
-        if (pos > finish) {
-            throw "out of bound!";
-        } else {
-            iterator tmp = finish;
-            while (tmp != pos) {
-                *tmp = *(tmp - 1);
-                --tmp;
-            }
-            *pos = t;
-        }
-        ++finish;
-    } else {
-        // copy and swap;
-        capacity = 2 * capacity;
+    if (finish == end_of_storage) {
         difference_type gap = pos - start;
-        iterator new_start = Alloc::allocate(capacity);
-        iterator tmp1 = start, tmp2 = new_start;
-        while (tmp1 != finish) {
-            *tmp2 = *tmp1;
-            ++tmp1;
-            ++tmp2;
-        }
-        finish = tmp2;
-        LL::swap(start, new_start);
-        Alloc::deallocate(new_start);
-        end_of_storage = start + capacity;
+        reallocate_space();
         pos = start + gap;
-        if (pos > finish) {
-            throw "out of bound";
-        } else {
-            iterator tmp = finish;
-            while (tmp != pos) {
-                *tmp = *(tmp - 1);
-                --tmp;
-            }
-            *pos = t;
-        }
-        ++finish;
     }
+    if (pos > finish) {
+        throw "out of bound!";
+    } else {
+        copy_backward(pos, finish, finish + 1);
+        *pos = t;
+    }
+    ++finish;
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::insert(const_iterator posi, const value_type& t) {
-    insert_aux(posi, t);
+    if(posi == finish)
+        push_back(t);
+    else
+        insert_aux(posi, t);
 }
 template <class T, class Alloc>
 template <class InputIt>
@@ -180,30 +167,27 @@ template <class T, class Alloc>
 void vector<T, Alloc>::push_back(const vector<T, Alloc>::value_type& t) {
     if (finish != end_of_storage) {
         *finish = t;
-        ++finish;
     } else {
-        insert_aux(end(), t);
+        reallocate_space();
+        allocator_type::construct(finish,t);
     }
+    ++finish;
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::push_back(value_type&& t) {
-    if (finish != end_of_storage) {
-        *finish = t;
-        ++finish;
-    } else {
-        insert_aux(end(), t);
-    }
+    emplace_back(move(t));    
 }
-// template <class T, class Alloc>
-// template <class... Args>
-// void vector<T,Alloc>::emplace_back(Args&&... args){
-//     if(finish != end_of_storage){
-//         allocator_type::construct(finish, args...);
-//         ++finish;
-//     }else{
-        
-//     }
-// }
+template <class T, class Alloc>
+template <class... Args>
+void vector<T,Alloc>::emplace_back(Args&&... args){
+    if(finish != end_of_storage){
+        allocator_type::construct(finish, args...);
+    }else{
+        reallocate_space();
+        allocator_type::construct(finish, args...);
+    }
+    ++finish;
+}
 template <class T, class Alloc>
 void vector<T, Alloc>::reserve() {
     size_t l = 0, r = size() - 1;
@@ -216,17 +200,13 @@ void vector<T, Alloc>::reserve() {
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::clear() {
-    _deallocate(start);
-    vector();
+    allocator_type::desoty(start, finish);
+    finish = start;
 }
 template <class T, class Alloc>
-void vector<T, Alloc>::remove(const_iterator posi) {
-    auto last = end();
-    iterator tmp = const_cast<iterator>(posi);
-    while (tmp != last) {
-        *tmp = *(tmp + 1);
-        ++tmp;
-    }
+void vector<T, Alloc>::remove(const iterator& posi) {
+    allocator_type::destory(posi);
+    copy(posi + 1, finish, posi); 
     --finish;
 }
 template <class T>
@@ -255,7 +235,7 @@ vector<T, Alloc>::vector(size_type n, const T& value, const Alloc& alloc) {
     finish = start + i;
 }
 template <class T, class Alloc>
-template <class InputIt, class >
+template <class InputIt, class>
 vector<T, Alloc>::vector(InputIt first, InputIt last, const Alloc& alloc) {
     while (capacity < last - first) capacity *= 2;
     start = alloc.allocate(capacity);
