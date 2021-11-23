@@ -284,6 +284,7 @@ vector<T, Alloc>& vector<T, Alloc>::operator=(const vector<T, Alloc>& x) {
     finish = x.finish;
     capacity = x.capacity;
     end_of_storage = x.end_of_storage;
+    return *this;
 }
 template <class T, class Alloc>
 vector<T, Alloc>& vector<T, Alloc>::operator=(vector<T, Alloc>&& x) {
@@ -321,6 +322,10 @@ void vector<T, Alloc>::assign(InputIt first, InputIt last) {
         ++tmp;
         ++first;
     }
+}
+template <class T>
+void swap(vector<T> x, vector<T> y){
+    x.swap(y);
 }
 }  // namespace LL
 #endif
