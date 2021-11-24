@@ -1,6 +1,7 @@
 #include "lldeque.h"
 #include <iostream>
 #include <cstdio>
+#include <string>
 int main(){
     LL::deque<int> b;
     LL::deque<int> c(6);
@@ -25,7 +26,7 @@ int main(){
         b.push_front(i);
     }
     for(int i = 0; i < 5; ++i){
-        b.push_back(2);
+        b.push_back(2); // calling push_back(int&&)
     }
     for(int i = 0; i < 5; ++i){
         b.push_front(10);
@@ -59,19 +60,7 @@ int main(){
     ::printf("%ld \n", b.size());
     b.erase(b.begin(), b.begin() + 200);
     ::printf("%ld \n", b.size());
-// // TODO problem of element choas need to be sloved. 
-    // LL::deque<int> b(7,0);
-    // for(auto i : b){
-    //     ::printf("%d \t", i);
-    // }
-    // ::printf("\n");
-    // for(int i = 0; i < 7; ++i){
-    //     b.pop_front(); // ! there is not problem in function of pop_back();
-    // }
-    // for(auto i : b){
-    //     ::printf("%d \t", i);
-    // }
-    // ::printf("\n");
+
     system("pause");
     return 0;
 }

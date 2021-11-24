@@ -35,3 +35,19 @@ target_link_directories(2stackAqueue
     PRIVATE 
         ${PROJECT_SOURCE_DIR}
 )
+add_executable(2priority_queue 2priority_queue.cpp)
+target_link_directories(2priority_queue
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)
+
+add_executable(2rb_tree 2rb_tree.cpp)
+target_link_directories(2rb_tree
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)
+add_executable(2set 2set.cpp)
+target_link_directories(2set
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)

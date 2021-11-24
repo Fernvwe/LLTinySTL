@@ -1,55 +1,30 @@
 #include <iostream>
 #include "llvector.h"
-#include <vector>
 int main(){
-    
-    LL::vector<int> a;
-    a.push_back(10);
-    a.push_back(20);
-    a.push_back(30);
-    a.push_back(40);
-    a.push_back(50);
-    a.push_back(70);
-    a.push_back(90);
-    a.push_back(100);
-    // a[10];
-    for(auto it: a){
-        std::cout << it <<" ";
+    // * the strategy of space expand need more thinking.
+    LL::vector<int> foo;
+    for(int i = 0; i < 100; ++i){
+        foo.push_back(i);
+    }  
+    for(auto i : foo)
+        std::cout << i << "\t";
+    std::cout << std::endl;
+    for(int i = 0; i < 100; ++i){
+        foo.pop_back();
     }
-    std::cout<<std::endl;
-    std::cout<<a.size()<<std::endl;
-    std::cout<<a.empty()<<std::endl;
-    std::cout<<a.back()<<std::endl;
-    a.reserve();
-    for(auto it: a){
-        std::cout << it <<" ";
+    std::cout<< foo.size() << std::endl;
+    for(int i = 0; i < 100; ++i){
+        foo.emplace_back(10);
     }
-    std::cout<<std::endl;
-    // 
-    a.insert(a.end(), 20);
-    for(auto it: a){
-        std::cout << it <<" ";
+    for(auto i : foo)
+        std::cout << i << "\t";
+    std::cout << std::endl;
+    for(int i = 0; i < 100; ++i){
+        foo.insert(foo.end() - 1, 20);
     }
-    std::cout<<std::endl;
-    // a.clear();
-    a.erase(a.begin());
-    a.pop_back();
-    for(auto it: a){
-        std::cout << it <<" ";
-    }
-    std::cout<<std::endl;
-    std::cout<<a.size()<<std::endl;
-    LL::vector<int> b;
-    LL::swap(a,b);
-    for(auto it: b){
-        std::cout << it <<" ";
-    }
-    std::cout<<std::endl;
-    LL::vector<int> c(10,0);
-    for(auto it: c){
-        std::cout << it <<" ";
-    }
-    std::cout<<std::endl;
+    for(auto i : foo)
+        std::cout << i << "\t";
+    std::cout << std::endl;
     system("pause");
     return 0;
 }

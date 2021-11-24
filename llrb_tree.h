@@ -194,6 +194,14 @@ class _rb_tree {
     _rb_tree() : header(get_node()), node_count(0), key_compare(Compare()) {
         empty_initialize();
     }
+    ~_rb_tree(){
+        auto it = begin();
+        while(it != end()){
+            auto tmp = ++it;
+            tree_node_allocator::deallocate(it._node);
+            it = tmp;
+        }       
+    }
     iterator begin() { return static_cast<iterator>(header->left); }
     iterator end() { return static_cast<iterator>(header); }
     bool empty() { return node_count == 0; }
