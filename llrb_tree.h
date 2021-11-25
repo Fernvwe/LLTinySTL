@@ -60,48 +60,51 @@ bool inline _has_no_redchild(_rb_tree_node<T>* x, _rb_tree_node<T>*& t) {
     }
     return true;
 }
-template <class T>
-struct _rb_tree_iterator
-    : public iterator<bidirectional_iterator_tag, _rb_tree_node<T>> {
-    using iterator = _rb_tree_iterator<T>;
-    using pointer = _rb_tree_node<T>*;
-    using reference = T&;
-    pointer _node;
+
+
+template <class T, class Ref, class Ptr>
+struct _rb_tree_iterator{
+    using iterator = _rb_tree_iterator<T, Ref, Ptr>;
+    using const_iterator = _rb_tree_iterator<T, const Ref, const Ptr>;  
+    using link_type = _rb_tree_node<T>*;
+    using reference = Ref;
+    using pointer = Ptr;
+    link_type _node;
     _rb_tree_iterator() {}
-    _rb_tree_iterator(pointer x) : _node(x) {}
+    _rb_tree_iterator(link_type x) : _node(x) {}
     _rb_tree_iterator(const iterator& it) : _node(it._node) {}
-
-    void _increment();
-    void _decrement();
-
+    
     reference operator*() const { return _node->val; }
-
-    iterator& operator++() {
-        _increment();
-        return *this;
-    }
-    iterator operator++(int) {
-        auto tmp = *this;
-        _increment();
-        return tmp;
-    }
-    iterator& operator--() {
-        _decrement();
-        return *this;
-    }
-    iterator operator--(int) {
-        auto tmp = *this;
-        _decrement();
-        return tmp;
-    }
 
     bool operator==(const iterator& y) { return _node == y._node; }
 
     bool operator!=(const iterator& y) { return _node != y._node; }
+    void _increment();
+    void _decrement();
+    iterator& operator++() {
+        this->_increment();
+        return *this;
+    }
+    iterator operator++(int) {
+        auto tmp = *this;
+        this->_increment();
+        return tmp;
+    }
+    iterator& operator--() {
+        this->_decrement();
+        return *this;
+    }
+    iterator operator--(int) {
+        auto tmp = *this;
+        this->_decrement();
+        return tmp;
+    }
 };
 
-template <class T>
-void _rb_tree_iterator<T>::_increment() {
+
+
+template <class T, class Ref, class Ptr>
+void _rb_tree_iterator<T,Ref,Ptr>::_increment() {
     if (_node->right != nullptr) {
         _node = _node->right;
         while (_node->left) _node = _node->left;
@@ -115,8 +118,8 @@ void _rb_tree_iterator<T>::_increment() {
     }
 }
 
-template <class T>
-void _rb_tree_iterator<T>::_decrement() {
+template <class T, class Ref, class Ptr>
+void _rb_tree_iterator<T,Ref,Ptr>::_decrement() {
     if (_node->color == _rb_tree_red && _node->parent->parent == _node) {
         _node = _node->right;
     } else if (_node->left != nullptr) {
@@ -149,7 +152,8 @@ class _rb_tree {
     using reference = value_type&;
     using size_type = size_t;
     using difference_type = ptrdiff_t;
-    using iterator = _rb_tree_iterator<Value>;
+    using iterator = _rb_tree_iterator<Value, Value&, Value*>;
+    using const_iterator = _rb_tree_iterator<Value, const Value&, const Value*>;
 
    private:
     link_type get_node() { return tree_node_allocator::allocate(); }
@@ -194,16 +198,16 @@ class _rb_tree {
     _rb_tree() : header(get_node()), node_count(0), key_compare(Compare()) {
         empty_initialize();
     }
-    ~_rb_tree(){
-        auto it = begin();
-        while(it != end()){
-            auto tmp = ++it;
-            tree_node_allocator::deallocate(it._node);
-            it = tmp;
-        }       
+    ~_rb_tree() {
+        clear();
+        tree_node_allocator::deallocate(header);
     }
-    iterator begin() { return static_cast<iterator>(header->left); }
-    iterator end() { return static_cast<iterator>(header); }
+    iterator begin() { return header->left; }
+    const_iterator begin() const{ return header->left; }
+    const_iterator cbegin() {return header->left; }
+    iterator end() { return header; }
+    const_iterator end() const { return header; }
+    const_iterator cend() const { return header; }
     bool empty() { return node_count == 0; }
     size_type size() { return node_count; }
 
@@ -212,7 +216,20 @@ class _rb_tree {
     iterator insert_equal(const value_type& v);
     void erase(iterator posi);
     void erase(const value_type& x);
+    void clear();
 };
+template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
+void _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::clear() {
+    auto it = begin();
+    while (it != end()) {
+        auto tmp = ++it;
+        tree_node_allocator::deallocate(it._node);
+        it = tmp;
+    }
+    header->parent = header;
+    header->right = header;
+    header->left = header;
+}
 
 template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
 void _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::rebalance_rbtree_insert(

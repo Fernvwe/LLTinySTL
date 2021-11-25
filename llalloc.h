@@ -61,11 +61,11 @@ inline void _destroy_cat(ForwardIter first, ForwardIter last, std::false_type) {
         _destroy(&*first);
 }
 template <class T>
-inline void _destroy(T* ptr) {
+inline void _destroy(T ptr) {
     _destroy_one(ptr, std::is_trivially_destructible<T>{});
 }
 template <class ForwardIter>
-inline void _destroy(ForwardIter* first, ForwardIter* last) {
+inline void _destroy(ForwardIter first, ForwardIter last) {
     _destory_cat(first,last, std::is_trivially_destructible<
         typename iterator_traits<ForwardIter>::value_type
     >{});

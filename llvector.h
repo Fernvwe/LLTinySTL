@@ -200,7 +200,7 @@ void vector<T, Alloc>::reserve() {
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::clear() {
-    allocator_type::desoty(start, finish);
+    allocator_type::destory(start, finish);
     finish = start;
 }
 template <class T, class Alloc>
