@@ -61,19 +61,18 @@ bool inline _has_no_redchild(_rb_tree_node<T>* x, _rb_tree_node<T>*& t) {
     return true;
 }
 
-
 template <class T, class Ref, class Ptr>
-struct _rb_tree_iterator{
+struct _rb_tree_iterator {
     using iterator = _rb_tree_iterator<T, Ref, Ptr>;
-    using const_iterator = _rb_tree_iterator<T, const Ref, const Ptr>;  
+    using const_iterator = _rb_tree_iterator<T, const Ref, const Ptr>;
     using link_type = _rb_tree_node<T>*;
     using reference = Ref;
     using pointer = Ptr;
     link_type _node;
-    _rb_tree_iterator() {}
+    _rb_tree_iterator() : _node(nullptr) {}
     _rb_tree_iterator(link_type x) : _node(x) {}
     _rb_tree_iterator(const iterator& it) : _node(it._node) {}
-    
+
     reference operator*() const { return _node->val; }
 
     bool operator==(const iterator& y) { return _node == y._node; }
@@ -101,10 +100,8 @@ struct _rb_tree_iterator{
     }
 };
 
-
-
 template <class T, class Ref, class Ptr>
-void _rb_tree_iterator<T,Ref,Ptr>::_increment() {
+void _rb_tree_iterator<T, Ref, Ptr>::_increment() {
     if (_node->right != nullptr) {
         _node = _node->right;
         while (_node->left) _node = _node->left;
@@ -119,7 +116,7 @@ void _rb_tree_iterator<T,Ref,Ptr>::_increment() {
 }
 
 template <class T, class Ref, class Ptr>
-void _rb_tree_iterator<T,Ref,Ptr>::_decrement() {
+void _rb_tree_iterator<T, Ref, Ptr>::_decrement() {
     if (_node->color == _rb_tree_red && _node->parent->parent == _node) {
         _node = _node->right;
     } else if (_node->left != nullptr) {
@@ -193,42 +190,64 @@ class _rb_tree {
     void rebalance_for_erase(link_type p, link_type x, link_type s);
     void erase_aux(link_type y, link_type x);
     void connect34(link_type g, link_type p, link_type v);
+    link_type find_aux(const key_type& key) const;
+    void destory_node_aux(link_type node);
 
    public:
     _rb_tree() : header(get_node()), node_count(0), key_compare(Compare()) {
         empty_initialize();
     }
-    ~_rb_tree() {
-        clear();
-        tree_node_allocator::deallocate(header);
-    }
     iterator begin() { return header->left; }
-    const_iterator begin() const{ return header->left; }
-    const_iterator cbegin() {return header->left; }
+    const_iterator begin() const { return header->left; }
+    const_iterator cbegin() { return header->left; }
     iterator end() { return header; }
     const_iterator end() const { return header; }
     const_iterator cend() const { return header; }
     bool empty() { return node_count == 0; }
     size_type size() { return node_count; }
-
+    size_type count(const key_type& key);
+    iterator find(const key_type& key) {
+        return static_cast<iterator>(find_aux(key));
+    }
+    const_iterator find(const key_type& key) const {
+        return static_cast<const_iterator>(find_aux(key));
+    }
+    const_iterator cfind(const key_type& key) {
+        return static_cast<const_iterator>(find_aux(key));
+    }
     // element operator
     pair<iterator, bool> insert_unique(const value_type& v);
     iterator insert_equal(const value_type& v);
     void erase(iterator posi);
     void erase(const value_type& x);
-    void clear();
+    void clear() {
+        destory_node_aux(header->parent);
+        header->parent = header;
+    }
 };
 template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
-void _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::clear() {
-    auto it = begin();
-    while (it != end()) {
-        auto tmp = ++it;
-        tree_node_allocator::deallocate(it._node);
-        it = tmp;
+void _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::destory_node_aux(
+    link_type node) {
+    if (node == nullptr) return;
+    destory_node_aux(node->left);
+    destory_node_aux(node->right);
+    tree_node_allocator::deallocate(node);
+}
+template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
+typename _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::link_type
+_rb_tree<Key, Value, KeyofValue, Compare, Alloc>::find_aux(
+    const key_type& key) const {
+    auto node = root();
+    if (node == header) return header;
+    while (node != nullptr) {
+        if (node->val == key) return node;
+        if (key_compare(KeyofValue()(key), KeyofValue()(node->val))) {
+            node = node->left;
+        } else {
+            node = node->right;
+        }
     }
-    header->parent = header;
-    header->right = header;
-    header->left = header;
+    return header;
 }
 
 template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
