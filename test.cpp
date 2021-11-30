@@ -37,6 +37,8 @@ int main() {
     p = &a;
     set<int> hash;
     auto d = hash.begin();
+    auto bo = hash.count(1);
+    multiset<int> hash_2;
     return 0;
 }
 

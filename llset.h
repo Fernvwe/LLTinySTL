@@ -78,8 +78,13 @@ class multiset {
     void clear() { return container.clear(); }
     void insert(const value_type& x) { container.insert_equal(x); }
     void erase(const value_type& x) { container.erase(x); }
-    size_type count(const key_type& key) const  { return container.count(key); };
-    iterator find(const key_type& key) { return container.cfind(key); }
+    iterator find(const key_type& key) { return container.find(key); }
+    iterator lower_bound(const key_type& key) const {
+        return container.lower_bound(key);
+    }
+    iterator upper_bound(const key_type& key) const {
+        return container.upper_bound(key);
+    }
 };
 
 }  // namespace LL

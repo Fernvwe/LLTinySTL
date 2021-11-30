@@ -213,7 +213,9 @@ class _rb_tree {
     const_reverse_iterator rend() const { return begin(); }
     bool empty() const noexcept { return node_count == 0; }
     size_type size() { return node_count; }
-    size_type count(const key_type& key)const;
+    size_type count(const key_type& key)const{
+        return find(key) == end() ? 0 : 1;
+    }
     iterator find(const key_type& key) {
         return static_cast<iterator>(find_imp(key));
     }
