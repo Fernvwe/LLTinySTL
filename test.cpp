@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <iostream>
 #include <vector>
+#include <set>
 using namespace std;
 template <class T>
 class Widget {
@@ -34,8 +35,8 @@ int main() {
     int c = 20;
     const int *p = &c;
     p = &a;
-    system("pause");
-
+    set<int> hash;
+    auto d = hash.begin();
     return 0;
 }
 

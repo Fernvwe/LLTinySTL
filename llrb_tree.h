@@ -151,6 +151,8 @@ class _rb_tree {
     using difference_type = ptrdiff_t;
     using iterator = _rb_tree_iterator<Value, Value&, Value*>;
     using const_iterator = _rb_tree_iterator<Value, const Value&, const Value*>;
+    using reverse_iterator = LL::reverse_iterator<iterator>;
+    using const_reverse_iterator = LL::reverse_iterator<const_iterator>;
 
    private:
     link_type get_node() { return tree_node_allocator::allocate(); }
@@ -190,7 +192,9 @@ class _rb_tree {
     void rebalance_for_erase(link_type p, link_type x, link_type s);
     void erase_aux(link_type y, link_type x);
     void connect34(link_type g, link_type p, link_type v);
-    link_type find_aux(const key_type& key) const;
+    link_type find_imp(const key_type& key) const;
+    link_type lower_bound_impl(const key_type& key) const;
+    link_type upper_bound_impl(const key_type& key) const;
     void destory_node_aux(link_type node);
 
    public:
@@ -199,21 +203,22 @@ class _rb_tree {
     }
     iterator begin() { return header->left; }
     const_iterator begin() const { return header->left; }
-    const_iterator cbegin() { return header->left; }
+    iterator cbegin() const { return header->left; }
+    reverse_iterator rbegin() { return end(); }
+    const_reverse_iterator rbegin() const { return end(); }
     iterator end() { return header; }
     const_iterator end() const { return header; }
-    const_iterator cend() const { return header; }
-    bool empty() { return node_count == 0; }
+    iterator cend() const { return header; }
+    reverse_iterator rend() { return begin(); }
+    const_reverse_iterator rend() const { return begin(); }
+    bool empty() const noexcept { return node_count == 0; }
     size_type size() { return node_count; }
-    size_type count(const key_type& key);
+    size_type count(const key_type& key)const;
     iterator find(const key_type& key) {
-        return static_cast<iterator>(find_aux(key));
+        return static_cast<iterator>(find_imp(key));
     }
     const_iterator find(const key_type& key) const {
-        return static_cast<const_iterator>(find_aux(key));
-    }
-    const_iterator cfind(const key_type& key) {
-        return static_cast<const_iterator>(find_aux(key));
+        return static_cast<const_iterator>(find_imp(key));
     }
     // element operator
     pair<iterator, bool> insert_unique(const value_type& v);
@@ -224,7 +229,48 @@ class _rb_tree {
         destory_node_aux(header->parent);
         header->parent = header;
     }
+    // the first element not less than key
+    iterator lower_bound(const key_type& key) { return lower_bound_impl(key); }
+    const_iterator lower_bound(const key_type& key) const {
+        return lower_bound_impl(key);
+    }
+    iterator upper_bound(const key_type& key) { return upper_bound_impl(key); }
+    const_iterator upper_bound(const key_type& key) const {
+        return upper_bound_impl(key);
+    }
 };
+template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
+typename _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::link_type
+_rb_tree<Key, Value, KeyofValue, Compare, Alloc>::upper_bound_impl(
+    const key_type& key) const {
+    link_type node = root();
+    link_type par = header;
+    while (node != nullptr) {
+        if (key_compare(KeyofValue()(node->val), KeyofValue()(key))) {
+            par = node;
+            node = node->left;
+        } else {
+            node = node->right;
+        }
+    }
+    return par;
+}
+template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
+typename _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::link_type
+_rb_tree<Key, Value, KeyofValue, Compare, Alloc>::lower_bound_impl(
+    const key_type& key) const {
+    link_type node = root();
+    link_type par = header;
+    while (node != nullptr) {
+        if (key_compare(KeyofValue()(node->val), KeyofValue()(key))) {
+            node = node->right;
+        } else {
+            node = node->left;
+            par = node;
+        }
+    }
+    return par;
+}
 template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
 void _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::destory_node_aux(
     link_type node) {
@@ -235,7 +281,7 @@ void _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::destory_node_aux(
 }
 template <class Key, class Value, class KeyofValue, class Compare, class Alloc>
 typename _rb_tree<Key, Value, KeyofValue, Compare, Alloc>::link_type
-_rb_tree<Key, Value, KeyofValue, Compare, Alloc>::find_aux(
+_rb_tree<Key, Value, KeyofValue, Compare, Alloc>::find_imp(
     const key_type& key) const {
     auto node = root();
     if (node == header) return header;
