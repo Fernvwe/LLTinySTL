@@ -25,6 +25,12 @@ int main(){
     for(auto i : foo)
         std::cout << i << "\t";
     std::cout << std::endl;
+    LL::vector<int> foo_2(foo);
+    foo.clear();
+
+    for(auto i : foo_2)
+        std::cout << i << "\t";
+    std::cout << std::endl;
     system("pause");
     return 0;
 }

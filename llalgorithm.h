@@ -32,5 +32,10 @@ template <class T>
 T max(const T& val1, const T& val2) {
     return val1 > val2 ? val1 : val2;
 }
+
+template <class ForwardIter, class Val>
+ForwardIter lower_bound(ForwardIter first, ForwardIter last, Val val){
+
+}
 }  // namespace LL
 #endif

@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <iostream>
 #include <vector>
+#include <unordered_set>
 #include <set>
 using namespace std;
 template <class T>
@@ -31,14 +32,19 @@ int main() {
     // for(auto i : b){
     //     ::printf("%d", i);
     // }
-    const int a = 10;
-    int c = 20;
-    const int *p = &c;
-    p = &a;
-    set<int> hash;
-    auto d = hash.begin();
-    auto bo = hash.count(1);
-    multiset<int> hash_2;
+    // const int a = 10;
+    // int c = 20;
+    // const int *p = &c;
+    // p = &a;
+    // set<int> hash;
+    // auto d = hash.begin();
+    // auto bo = hash.count(1);
+    // multiset<int> hash_2;
+    vector<int> a(7,10);
+    set<int> b(a);
+    unordered_set<int> ans;
+    a.clear();
+    std::cout<<b.size()<<std::endl;
     return 0;
 }
 

@@ -26,6 +26,10 @@ int main(){
     for(;it != my_tree.end(); ++it)
         std::cout << *it << "\t";
     std::cout<<std::endl;
+    _rb_tree<int,int, ::identity<int>, ::less<int>> my_tree2(my_tree);
+    it = my_tree2.begin();
+    for(;it != my_tree2.end(); ++it)
+        std::cout << *it << "\t";
     system("pause");
     return 0;
 }

@@ -51,3 +51,18 @@ target_link_directories(2set
     PRIVATE 
         ${PROJECT_SOURCE_DIR}
 )
+add_executable(2map 2map.cpp)
+target_link_directories(2map
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)
+add_executable(2hashtable 2hashtable.cpp)
+target_link_directories(2hashtable
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)
+add_executable(2unordered_set 2unordered_set.cpp)
+target_link_directories(2unordered_set
+    PRIVATE 
+        ${PROJECT_SOURCE_DIR}
+)

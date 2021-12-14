@@ -10,6 +10,7 @@
 #include "llalgorithm.h"
 #include "llalloc.h"
 #include "lliterator.h"
+#include "lluninitialized.h"
 /**
  * The complexity (efficiency) of common operations on vectors is as follows:
  *      Random access - constant O(1)
@@ -42,6 +43,8 @@ class vector {
     void insert_aux(const_iterator posi, const value_type& t);
     void remove(const iterator& posi);
     void reallocate_space();
+    template <class It>
+    void range_init(It first, It last);
 
    public:
     // construct/copy/destory
@@ -50,13 +53,12 @@ class vector {
     vector(size_type n, const T& value, const Alloc& = Alloc());
     template <class InputIt, class = typename std::enable_if<
                                  !std::is_integral<InputIt>::value>::type>
-    vector(InputIt first, InputIt last, const Alloc& = Alloc());
+    vector(InputIt first, InputIt last);
     vector(vector&&);
-    vector(const vector&, const Alloc&);
-    vector(vector&&, const Alloc&);
+    vector(const vector&);
     // TODO initializer_list<T>
     vector(std::initializer_list<T>);
-    ~vector();
+    ~vector() { clear(); }
     vector<T, Alloc>& operator=(const vector<T, Alloc>& x);
     vector<T, Alloc>& operator=(vector<T, Alloc>&& x);
 
@@ -88,7 +90,7 @@ class vector {
     T max_size() { return capacity; }
 
     // element  access
-    reference operator[](size_type n) {
+    reference operator[](size_type n)  {
         assert(n < size());
         return *(begin() + n);
     }
@@ -148,7 +150,7 @@ void vector<T, Alloc>::insert_aux(const_iterator posi, const value_type& t) {
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::insert(const_iterator posi, const value_type& t) {
-    if(posi == finish)
+    if (posi == finish)
         push_back(t);
     else
         insert_aux(posi, t);
@@ -169,20 +171,20 @@ void vector<T, Alloc>::push_back(const vector<T, Alloc>::value_type& t) {
         *finish = t;
     } else {
         reallocate_space();
-        allocator_type::construct(finish,t);
+        allocator_type::construct(finish, t);
     }
     ++finish;
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::push_back(value_type&& t) {
-    emplace_back(move(t));    
+    emplace_back(move(t));
 }
 template <class T, class Alloc>
 template <class... Args>
-void vector<T,Alloc>::emplace_back(Args&&... args){
-    if(finish != end_of_storage){
+void vector<T, Alloc>::emplace_back(Args&&... args) {
+    if (finish != end_of_storage) {
         allocator_type::construct(finish, args...);
-    }else{
+    } else {
         reallocate_space();
         allocator_type::construct(finish, args...);
     }
@@ -206,7 +208,7 @@ void vector<T, Alloc>::clear() {
 template <class T, class Alloc>
 void vector<T, Alloc>::remove(const iterator& posi) {
     allocator_type::destory(posi);
-    copy(posi + 1, finish, posi); 
+    copy(posi + 1, finish, posi);
     --finish;
 }
 template <class T>
@@ -236,9 +238,9 @@ vector<T, Alloc>::vector(size_type n, const T& value, const Alloc& alloc) {
 }
 template <class T, class Alloc>
 template <class InputIt, class>
-vector<T, Alloc>::vector(InputIt first, InputIt last, const Alloc& alloc) {
+vector<T, Alloc>::vector(InputIt first, InputIt last) {
     while (capacity < last - first) capacity *= 2;
-    start = alloc.allocate(capacity);
+    start = allocator_type::allocate(capacity);
     end_of_storage = start + capacity;
     iterator tmp = start;
     while (first < last) {
@@ -248,13 +250,19 @@ vector<T, Alloc>::vector(InputIt first, InputIt last, const Alloc& alloc) {
     }
     finish = tmp;
 }
+template <class T, class Alloc>
+vector<T, Alloc>::vector(const vector<T, Alloc>& x) {
+    range_init(x.start, x.finish);
+    capacity = max(x.capacity, capacity);
+    end_of_storage = start + capacity;
+}
 // ! some error , need to revise
 template <class T, class Alloc>
-vector<T, Alloc>::vector(vector&& rhs)
-    : start(rhs.start),
-      finish(rhs.finish),
-      capacity(rhs.capacity),
-      end_of_storage(rhs.end_of_storage) {
+vector<T, Alloc>::vector(vector&& rhs) {
+    start = rhs.start;
+    finish = rhs.finish;
+    capacity = max(rhs.capacity, capacity);
+    end_of_storage = start + capacity;
     rhs.start = nullptr;
     rhs.finish = nullptr;
     rhs.end_of_storage = nullptr;
@@ -272,29 +280,21 @@ vector<T, Alloc>::vector(std::initializer_list<T> arr) {
     finish = tmp;
 }
 template <class T, class Alloc>
-vector<T, Alloc>::~vector() {
-    Alloc alloc;
-    alloc.deallocate(start);
-    finish = nullptr;
-    end_of_storage = nullptr;
-}
-template <class T, class Alloc>
 vector<T, Alloc>& vector<T, Alloc>::operator=(const vector<T, Alloc>& x) {
-    start = x.start;
-    finish = x.finish;
-    capacity = x.capacity;
-    end_of_storage = x.end_of_storage;
+    range_init(x.start, x.finish);  // assign start and finish.
+    capacity = max(capacity, x.capacity);
+    end_of_storage = start + capacity;
     return *this;
 }
 template <class T, class Alloc>
 vector<T, Alloc>& vector<T, Alloc>::operator=(vector<T, Alloc>&& x) {
-    start = x.start;
-    finish = x.finish;
-    capacity = x.capacity;
-    end_of_storage = x.end_of_storage;
+    range_init(x.start, x.finish);  // assign start and finish.
+    capacity = max(capacity, x.capacity);
+    end_of_storage = start + capacity;
     x.start = nullptr;
     x.finish = nullptr;
-    x.capacity = nullptr;
+    x.capacity = 0;
+    return *this;
 }
 template <class T, class Alloc>
 void vector<T, Alloc>::erase(const_iterator first, const_iterator last) {
@@ -324,8 +324,15 @@ void vector<T, Alloc>::assign(InputIt first, InputIt last) {
     }
 }
 template <class T>
-void swap(vector<T> x, vector<T> y){
+void swap(vector<T> x, vector<T> y) {
     x.swap(y);
+}
+template <class T, class Alloc>
+template <class It>
+void vector<T, Alloc>::range_init(It first, It last) {
+    difference_type gap = static_cast<difference_type>(last - first);
+    start = allocator_type::allocate(gap);
+    finish = uninitialized_copy(first, last, start);
 }
 }  // namespace LL
 #endif

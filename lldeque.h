@@ -10,7 +10,7 @@
 #include "lliterator.h"
 #include "llutility.h"
 #include "llconstruct.h"
-
+#include "lluninitialized.h"
 namespace LL {
 
 template <class T, class Alloc = LL::allocator<T>, size_t BufSiz = 7>
@@ -65,7 +65,6 @@ class __deque_iterator {
         return tmp;
     }
     reference operator*() { return *cur; }
-    // TODO 研究为什么 operator += 这样书写!!!
     self& operator+=(difference_type n) {
         difference_type offset = static_cast<difference_type>(cur - first + n);
         if (offset >= 0 && offset < BufSiz) {
@@ -316,36 +315,25 @@ template <class InputIterator, class>
 deque<T, Allocator, BufSiz>::deque(InputIterator first, InputIterator last) {
     size_type n = static_cast<size_type>(last - first);
     create_map_and_nodes(n);
-    iterator tmp = start;
-    for (; first < last; ++first) {
-        allocator_type::construct(tmp.cur, *first);
-        ++tmp;
-    }
+    uninitialized_copy(first,last,start); 
 }
 
 template <class T, class Allocator, size_t BufSiz>
 deque<T, Allocator, BufSiz>::deque(const deque<T, Allocator>& x) {
     size_type n = x.size();
     create_map_and_nodes(n);
-    iterator tmp = start;
-    iterator x_tmp = x.begin();
-    while (x_tmp < x.end()) {
-        allocator_type::construct(tmp.cur, *x_tmp);
-        ++tmp;
-        ++x_tmp;
-    }
+    uninitialized_copy(x.start,x.finish, start);
 }
 template <class T, class Allocator, size_t BufSiz>
 deque<T, Allocator, BufSiz>::deque(deque<T, Allocator>&& x) {
-    size_type n = x.size();
-    create_map_and_nodes(n);
-    iterator tmp = start;
-    iterator x_tmp = x.begin();
-    while (x_tmp < x.end()) {
-        allocator_type::construct(tmp.cur, *x_tmp);
-        ++tmp;
-        ++x_tmp;
-    }
+    start = x.start;
+    finish = x.finish;
+    map_size = x.map_size;
+    map = x.map;
+    x.start = nullptr;
+    x.finish = nullptr;
+    x.map_size = 0;
+    x.map = nullptr;
 }
 template <class T, class Allocator, size_t BufSiz>
 deque<T, Allocator, BufSiz>::deque(std::initializer_list<T> x) {
