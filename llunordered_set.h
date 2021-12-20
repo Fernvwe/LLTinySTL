@@ -32,7 +32,7 @@ class unordered_set {
 
    public:
     unordered_set() : container(container_type(50, hasher(), key_equal())) {}
-    unordered_set(const self& rhs):contianer(rhs.container){} 
+    unordered_set(const self& rhs):container(rhs.container){} 
     unordered_set(self&& rhs):container(LL::move(rhs.container)){}
     self& operator=(const self& rhs){
         container = rhs.container;
@@ -91,7 +91,7 @@ class unordered_multiset {
 
    public:
     unordered_multiset() : container(container_type(50, hasher(), key_equal())) {}
-    unordered_multiset(const self& rhs):contianer(rhs.container){} 
+    unordered_multiset(const self& rhs):container(rhs.container){} 
     unordered_multiset(self&& rhs):container(LL::move(rhs.container)){}
     self& operator=(const self& rhs){
         container = rhs.container;
@@ -115,7 +115,7 @@ class unordered_multiset {
     }
 
     iterator erase() { return container.erase(); }
-    void swap(self& rhs) { container.swap(rhs.container) }
+    void swap(self& rhs) { container.swap(rhs.container); }
 
     size_type count(const key_type& key) { return container.multi_count(key); }
     iterator find(const key_type& key) { return container.find(key); }

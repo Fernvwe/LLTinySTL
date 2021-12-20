@@ -61,8 +61,8 @@ target_link_directories(2hashtable
     PRIVATE 
         ${PROJECT_SOURCE_DIR}
 )
-add_executable(2unordered_set 2unordered_set.cpp)
-target_link_directories(2unordered_set
+add_executable(2unordered_setAmap 2unordered_setAmap.cpp)
+target_link_directories(2unordered_setAmap
     PRIVATE 
         ${PROJECT_SOURCE_DIR}
 )
